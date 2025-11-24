@@ -9,9 +9,6 @@ public interface IGenericRepository<T> where T : class
     void Delete(T entity);
     void DeleteRange(IEnumerable<T> entities);
     
-    Task<T?>GetByIdAsync(Guid id,bool asNoTracking = false,
-        params  Expression<Func<T, object>>[] includeExpressions );
-    
     Task<T?> GetEntityByConditionAsync(Expression<Func<T, bool>> expression, bool asNoTracking = false,
         params Expression<Func<T, object>>[] includes);
 

@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TouristsAPI.ErrorResponses;
 using TouristsAPI.Helpers;
+using TouristsCore;
 using TouristsCore.Entities;
+using TouristsCore.Repositories;
 using TouristsRepository;
 
 namespace TouristsAPI.ExtensionsMethod;
@@ -21,9 +23,8 @@ public static class ApplicationServicesExtension
             .AddEntityFrameworkStores<TouristsContext>();
 
         // Repositotries :
-       // services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-       // services.AddScoped<IUnitOfWork, UnitOfWork>();
-
+        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 
         // Services :

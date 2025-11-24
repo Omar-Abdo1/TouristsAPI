@@ -20,16 +20,6 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     public void Delete(T entity) => _context.Set<T>().Remove(entity);
     
     public void DeleteRange(IEnumerable<T> entities) => _context.Set<T>().RemoveRange(entities);
-
-    public async Task<T?> GetByIdAsync(Guid id, bool asNoTracking = false,
-        params Expression<Func<T, object>>[] includeExpressions)
-    {
-        var query = _context.Set<T>().AsQueryable();
-        if(asNoTracking)
-            query = query.AsNoTracking();
-        return await query.FirstOrDefaultAsync();
-
-    }
     
     public async Task<T?> GetEntityByConditionAsync(Expression<Func<T, bool>> expression, bool asNoTracking = false, params Expression<Func<T, object>>[] includes)
     {
