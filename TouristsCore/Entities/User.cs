@@ -9,4 +9,5 @@ public class User : IdentityUser<Guid>
     public DateTime? UpdatedAt { get; set; }
     public TouristProfile? TouristProfile { get; set; }
     public GuideProfile? GuideProfile { get; set; }
+    public ICollection<RefreshToken>  RefreshTokens { get; set; } = new List<RefreshToken>();
 }
