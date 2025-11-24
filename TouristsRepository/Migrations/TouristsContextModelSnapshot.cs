@@ -648,9 +648,6 @@ namespace TouristsRepository.Migrations
                     b.Property<DateTime?>("DisconnectedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("UserId", "ConnectionId");
 
                     b.ToTable("UserConnections");

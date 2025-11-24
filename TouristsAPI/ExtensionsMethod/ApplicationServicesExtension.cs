@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TouristsAPI.ErrorResponses;
+using TouristsAPI.Helpers;
 using TouristsCore.Entities;
 using TouristsRepository;
 
@@ -26,6 +27,8 @@ public static class ApplicationServicesExtension
 
 
         // Services :
+        services.AddAutoMapper(typeof(MappingProfile));
+
         
 
         #region Validation Error 
