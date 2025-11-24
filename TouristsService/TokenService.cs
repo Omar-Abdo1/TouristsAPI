@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
@@ -54,5 +55,18 @@ public class TokenService : ITokenService
             signingCredentials: new SigningCredentials(AuthKey , SecurityAlgorithms.HmacSha256Signature)
         );
         return new JwtSecurityTokenHandler().WriteToken(Token);
+    }
+    
+    public RefreshToken GenerateRefreshToken()
+    {
+        var randomNumber = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomNumber);
+        return new RefreshToken
+        {
+            Token = Convert.ToBase64String(randomNumber),
+            ExpiresOn = DateTime.UtcNow.AddDays(10),
+            CreatedOn = DateTime.UtcNow
+        };
     }
 }
