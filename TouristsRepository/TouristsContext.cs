@@ -32,20 +32,20 @@ public class TouristsContext : IdentityDbContext<User,IdentityRole<Guid>,Guid>
           builder.Entity<IdentityRoleClaim<Guid>>().ToTable("RoleClaims");
           builder.Entity<IdentityUserToken<Guid>>().ToTable("UserTokens");
      }
-     DbSet<GuideProfile>  GuideProfiles { get; set; }
-     DbSet<TouristProfile>   TouristProfiles { get; set; }
-     DbSet<Booking>  Bookings { get; set; }
-     DbSet<FileRecord>   FileRecords { get; set; }
-     DbSet<Language>  Languages { get; set; }
-     DbSet<GuideLanguage> GuideLanguages { get; set; }
-     DbSet<Payment>   Payments { get; set; }
-     DbSet<Review>    Reviews { get; set; }
-     DbSet<Tour>       Tours { get; set; }
+     public DbSet<GuideProfile>  GuideProfiles { get; set; }
+     public DbSet<TouristProfile>   TouristProfiles { get; set; }
+     public DbSet<Booking>  Bookings { get; set; }
+     public  DbSet<FileRecord>   FileRecords { get; set; }
+     public DbSet<Language>  Languages { get; set; }
+     public DbSet<GuideLanguage> GuideLanguages { get; set; }
+     public DbSet<Payment>   Payments { get; set; }
+     public  DbSet<Review>    Reviews { get; set; }
+     public DbSet<Tour>       Tours { get; set; }
      // Chat : 
-     DbSet<Chat>       Chats { get; set; }
-     DbSet<ChatParticipant>   ChatParticipants { get; set; }
-     DbSet<Message>  Messages { get; set; }
-     DbSet<MessageVisibility>   MessageVisibility { get; set; }
-     DbSet<UserConnection>   UserConnections { get; set; }
-     DbSet<UserGroup>    UserGroups { get; set; }
+     public DbSet<Chat>       Chats { get; set; }
+     public DbSet<ChatParticipant>   ChatParticipants { get; set; }
+     public  DbSet<Message>  Messages { get; set; }
+     public  DbSet<MessageVisibility>   MessageVisibility { get; set; }
+     public DbSet<UserConnection>   UserConnections { get; set; }
+     public  DbSet<UserGroup>    UserGroups { get; set; }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using TouristsAPI.ExtensionsMethod;
 using TouristsCore.Entities;
 using TouristsRepository;
 
@@ -7,23 +8,27 @@ namespace TouristsAPI;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        
+        builder.Services.AddControllers().AddJsonOptions(options =>
+        {
+            // Add the converter to use string names for all enums
+            options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        });
         
         builder.Services.AddControllers();
         builder.Services.AddSwaggerGen();
         builder.Services.AddOpenApi();
 
-        builder.Services.AddDbContext<TouristsContext>(options =>
-        {
-          options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-        });
-
-        builder.Services.AddIdentity<User, IdentityRole<Guid>>()
-            .AddEntityFrameworkStores<TouristsContext>();
-
+        builder.Services.AddApplicationServices(
+            builder.Configuration.GetConnectionString("DefaultConnection"));
+        
+        
+        builder.Services.AddSwaggerAdvanced("TouristsAPI");
         var app = builder.Build();
+        await app.UpdateDatabaseAsync();
 
         if (app.Environment.IsDevelopment())
         {
@@ -31,9 +36,11 @@ public class Program
             app.UseSwaggerUI();
             app.MapOpenApi();
         }
-        
+
+        app.UseStaticFiles();
+        app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
-        app.Run();
+        await app.RunAsync();
     }
 }
