@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TouristsAPI.ExtensionsMethod;
+using TouristsAPI.MiddleWares;
 using TouristsCore.Entities;
 using TouristsRepository;
 
@@ -43,6 +44,8 @@ public class Program
         
         var app = builder.Build();
         await app.UpdateDatabaseAsync();
+
+        app.UseMiddleware<ExceptionMiddleWare>(); // custom MiddleWare
 
         if (app.Environment.IsDevelopment())
         {

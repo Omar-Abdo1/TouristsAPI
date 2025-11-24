@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TouristsAPI.ErrorResponses;
 using TouristsCore.Entities;
 using TouristsRepository;
 
@@ -27,24 +28,24 @@ public static class ApplicationServicesExtension
         // Services :
         
 
-        // #region Validation Error 
-        // services.Configure<ApiBehaviorOptions>(options =>
-        // {
-        //     options.InvalidModelStateResponseFactory = (context) =>
-        //     {
-        //         var errors = context.ModelState.Where(P => P.Value.Errors.Count() > 0)
-        //             .SelectMany(P => P.Value.Errors)
-        //             .Select(E => E.ErrorMessage)
-        //             .ToList();
-        //         var ValidationErrorReposonse = new ApiValidationResponse()
-        //         {
-        //             Errors = errors
-        //         };
-        //         return new BadRequestObjectResult(ValidationErrorReposonse);
-        //
-        //     };
-        // }); // For Validation Error 
-        // #endregion
+        #region Validation Error 
+        services.Configure<ApiBehaviorOptions>(options =>
+        {
+            options.InvalidModelStateResponseFactory = (context) =>
+            {
+                var errors = context.ModelState.Where(P => P.Value.Errors.Count() > 0)
+                    .SelectMany(P => P.Value.Errors)
+                    .Select(E => E.ErrorMessage)
+                    .ToList();
+                var ValidationErrorReposonse = new ApiValidationResponse()
+                {
+                    Errors = errors
+                };
+                return new BadRequestObjectResult(ValidationErrorReposonse);
+        
+            };
+        }); // For Validation Error 
+        #endregion
 
         return services;
     }
