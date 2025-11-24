@@ -25,8 +25,22 @@ public class Program
         builder.Services.AddApplicationServices(
             builder.Configuration.GetConnectionString("DefaultConnection"));
         
+        builder.Services.AddJWTServices(builder.Configuration["JWT:SecretKey"],
+            builder.Configuration["JWT:IssuerIP"]);
+        
         
         builder.Services.AddSwaggerAdvanced("TouristsAPI");
+        
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("My Policy", options =>
+            {
+                options.AllowAnyHeader();
+                options.AllowAnyMethod();
+                options.WithOrigins(builder.Configuration["FrontBaseUrl"]); // URL for The FrontEnd
+            });
+        });
+        
         var app = builder.Build();
         await app.UpdateDatabaseAsync();
 
@@ -36,6 +50,8 @@ public class Program
             app.UseSwaggerUI();
             app.MapOpenApi();
         }
+        
+        app.UseCors("My  Policy");
 
         app.UseStaticFiles();
         app.UseAuthentication();
