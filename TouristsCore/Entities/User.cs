@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace TouristsCore.Entities;
 
-public class User : IdentityUser
+public class User : IdentityUser<Guid>
 {
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }=DateTime.UtcNow;

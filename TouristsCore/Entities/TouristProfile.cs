@@ -14,4 +14,6 @@ public class TouristProfile // optional to Fill
     public FileRecord? AvatarFile { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    
+    ICollection<Booking>?  Bookings { get; set; }
 }

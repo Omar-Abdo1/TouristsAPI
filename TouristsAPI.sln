@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TouristsCore", "TouristsCor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TouristsRepository", "TouristsRepository\TouristsRepository.csproj", "{C429995E-D6EE-407F-B8F6-EB3F67CA2981}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TouristsService", "TouristsService\TouristsService.csproj", "{A3E23691-C7B6-4255-938B-7F11566FB541}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{C429995E-D6EE-407F-B8F6-EB3F67CA2981}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C429995E-D6EE-407F-B8F6-EB3F67CA2981}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C429995E-D6EE-407F-B8F6-EB3F67CA2981}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3E23691-C7B6-4255-938B-7F11566FB541}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3E23691-C7B6-4255-938B-7F11566FB541}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3E23691-C7B6-4255-938B-7F11566FB541}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3E23691-C7B6-4255-938B-7F11566FB541}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

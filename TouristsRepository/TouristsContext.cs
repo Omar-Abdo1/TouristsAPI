@@ -6,11 +6,17 @@ using TouristsCore.Entities;
 
 namespace TouristsRepository;
 
-public class TouristsContext : IdentityDbContext<User>
+public class TouristsContext : IdentityDbContext<User,IdentityRole<Guid>,Guid>
 {
      public TouristsContext(DbContextOptions<TouristsContext>  options) : base(options)
      {
           
+     }
+
+     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+     {
+          configurationBuilder.Properties<Enum>().HaveConversion<string>();
+          // change any Enum to string in DB
      }
 
      protected override void OnModelCreating(ModelBuilder builder)
@@ -19,12 +25,12 @@ public class TouristsContext : IdentityDbContext<User>
           builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         
           builder.Entity<User>().ToTable("Users");
-          builder.Entity<IdentityRole>().ToTable("Roles");
-          builder.Entity<IdentityUserRole<string>>().ToTable("UserRoles");
-          builder.Entity<IdentityUserClaim<string>>().ToTable("UserClaims");
-          builder.Entity<IdentityUserLogin<string>>().ToTable("UserLogins");
-          builder.Entity<IdentityRoleClaim<string>>().ToTable("RoleClaims");
-          builder.Entity<IdentityUserToken<string>>().ToTable("UserTokens");
+          builder.Entity<IdentityRole<Guid>>().ToTable("Roles");
+          builder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles");
+          builder.Entity<IdentityUserClaim<Guid>>().ToTable("UserClaims");
+          builder.Entity<IdentityUserLogin<Guid>>().ToTable("UserLogins");
+          builder.Entity<IdentityRoleClaim<Guid>>().ToTable("RoleClaims");
+          builder.Entity<IdentityUserToken<Guid>>().ToTable("UserTokens");
      }
      DbSet<GuideProfile>  GuideProfiles { get; set; }
      DbSet<TouristProfile>   TouristProfiles { get; set; }
