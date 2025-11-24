@@ -14,5 +14,6 @@ public class GuideProfile
     public FileRecord? AvatarFile { get; set; }
     // Navigation
     public ICollection<Tour> Tours { get; set; }
-    public ICollection<Language>  Languages { get; set; }
+    public ICollection<GuideLanguage> GuideLanguages { get; set; }
+    
 }

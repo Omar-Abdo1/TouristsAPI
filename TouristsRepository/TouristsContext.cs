@@ -31,6 +31,7 @@ public class TouristsContext : IdentityDbContext<User>
      DbSet<Booking>  Bookings { get; set; }
      DbSet<FileRecord>   FileRecords { get; set; }
      DbSet<Language>  Languages { get; set; }
+     DbSet<GuideLanguage> GuideLanguages { get; set; }
      DbSet<Payment>   Payments { get; set; }
      DbSet<Review>    Reviews { get; set; }
      DbSet<Tour>       Tours { get; set; }
