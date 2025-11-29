@@ -8,7 +8,6 @@ public interface IGenericRepository<T> where T : BaseEntity
     void Add(T entity);
     void Update(T entity);
     void Delete(T entity);
-    void DeleteRange(IEnumerable<T> entities);
     
     Task<T?> GetEntityByConditionAsync(Expression<Func<T, bool>> expression, bool asNoTracking = false,
         params Expression<Func<T, object>>[] includes);

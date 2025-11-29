@@ -7,16 +7,24 @@ namespace TouristsRepository;
 
 public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
 {
-   private readonly TouristsContext _context;
+   protected readonly TouristsContext _context;
 
     public GenericRepository(TouristsContext context)
     {
         _context = context;
     }
 
-    public async void Add(T entity) => _context.Set<T>().Add(entity);
+    public void Add(T entity)
+    {
+        entity.CreatedAt = DateTime.UtcNow;
+        _context.Set<T>().Add(entity);
+    }
 
-    public void Update(T entity) => _context.Set<T>().Update(entity);
+    public void Update(T entity)
+    {
+        entity.UpdatedAt = DateTime.UtcNow;
+        _context.Set<T>().Update(entity);
+    }
 
     public void Delete(T entity)
     {
@@ -24,8 +32,6 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
         entity.DeletedAt = DateTime.UtcNow;
         Update(entity);
     }
-    
-    public void DeleteRange(IEnumerable<T> entities) => _context.Set<T>().RemoveRange(entities);
     
     public async Task<T?> GetEntityByConditionAsync(Expression<Func<T, bool>> expression, bool asNoTracking = false, params Expression<Func<T, object>>[] includes)
     {
@@ -85,4 +91,5 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
         
         return await query.ToListAsync();
     }
+   
 }
