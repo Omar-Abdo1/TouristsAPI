@@ -86,11 +86,11 @@ public class DbSeeder
                 IsVerified = true
             };
             await _context.GuideProfiles.AddAsync(guideProfile);
-            
+            await _context.SaveChangesAsync();
             var randomLangId = _context.Languages.Local.OrderBy(r => Guid.NewGuid()).First().Id;
             await _context.GuideLanguages.AddAsync(new GuideLanguage 
             { 
-                GuideProfileId = guideProfile.UserId, 
+                GuideProfileId = guideProfile.Id, 
                 LanguageId = randomLangId 
             });
         }
@@ -116,7 +116,7 @@ public class DbSeeder
 
     private async Task CreateToursAsync()
     {
-        var guideIds = _context.GuideProfiles.Select(g => g.UserId).ToList();
+        var guideIds = _context.GuideProfiles.Select(g => g.Id).ToList();
 
         var tourFaker = new Faker<Tour>()
             .RuleFor(t => t.Title, f => f.Commerce.ProductName() + " Tour")

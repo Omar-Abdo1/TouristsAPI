@@ -8,7 +8,7 @@ public class Review : BaseEntity
     public int BookingId { get; set; }
     public Booking Booking { get; set; }
 
-    public Guid GuideId { get; set; } 
+    public int GuideId { get; set; } 
     public GuideProfile Guide { get; set; } 
     
     [Range(1,5)]

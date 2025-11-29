@@ -5,8 +5,8 @@ namespace TouristsCore.Entities;
 public class Booking : BaseEntity
 {
     public int TouristId { get; set; }
-    public User Tourist { get; set; }
-    public Guid GuideId { get; set; }
+    public TouristProfile Tourist { get; set; }
+    public int GuideId { get; set; }
     public GuideProfile Guide { get; set; }
     public int TourId { get; set; }
     public Tour Tour { get; set; }

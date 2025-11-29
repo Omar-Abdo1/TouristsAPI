@@ -12,8 +12,8 @@ using TouristsRepository;
 namespace TouristsRepository.Migrations
 {
     [DbContext(typeof(TouristsContext))]
-    [Migration("20251124232908_Adding Refresh token")]
-    partial class AddingRefreshtoken
+    [Migration("20251129201416_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -158,18 +158,26 @@ namespace TouristsRepository.Migrations
 
             modelBuilder.Entity("TouristsCore.Entities.Booking", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("EndAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("GuideId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("GuideId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime>("StartAt")
                         .HasColumnType("datetime2");
@@ -182,11 +190,14 @@ namespace TouristsRepository.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<Guid>("TourId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("TourId")
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("TouristId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("TouristId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -201,11 +212,22 @@ namespace TouristsRepository.Migrations
 
             modelBuilder.Entity("TouristsCore.Entities.Chat", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
@@ -215,11 +237,20 @@ namespace TouristsRepository.Migrations
 
             modelBuilder.Entity("TouristsCore.Entities.ChatParticipant", b =>
                 {
-                    b.Property<Guid>("ChatId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("ChatId")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -227,8 +258,11 @@ namespace TouristsRepository.Migrations
                     b.Property<DateTime>("JoinedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("LastSeenMessageId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("LastSeenMessageId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("ChatId", "UserId");
 
@@ -239,15 +273,20 @@ namespace TouristsRepository.Migrations
 
             modelBuilder.Entity("TouristsCore.Entities.FileRecord", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ContentType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("FileName")
@@ -264,6 +303,9 @@ namespace TouristsRepository.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid?>("UserId")
                         .HasColumnType("uniqueidentifier");
 
@@ -276,8 +318,8 @@ namespace TouristsRepository.Migrations
 
             modelBuilder.Entity("TouristsCore.Entities.GuideLanguage", b =>
                 {
-                    b.Property<Guid>("GuideProfileId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("GuideProfileId")
+                        .HasColumnType("int");
 
                     b.Property<int>("LanguageId")
                         .HasColumnType("int");
@@ -291,12 +333,14 @@ namespace TouristsRepository.Migrations
 
             modelBuilder.Entity("TouristsCore.Entities.GuideProfile", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<Guid?>("AvatarFileId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AvatarFileId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Bio")
                         .IsRequired()
@@ -305,8 +349,14 @@ namespace TouristsRepository.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("ExperienceYears")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsVerified")
                         .HasColumnType("bit");
@@ -314,6 +364,9 @@ namespace TouristsRepository.Migrations
                     b.Property<decimal?>("RatePerHour")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -338,9 +391,21 @@ namespace TouristsRepository.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -349,15 +414,26 @@ namespace TouristsRepository.Migrations
 
             modelBuilder.Entity("TouristsCore.Entities.Message", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<Guid?>("AttachmentFileId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<Guid>("ChatId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("AttachmentFileId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ChatId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDeletedGlobally")
                         .HasColumnType("bit");
@@ -370,6 +446,9 @@ namespace TouristsRepository.Migrations
 
                     b.Property<string>("Text")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -384,13 +463,25 @@ namespace TouristsRepository.Migrations
 
             modelBuilder.Entity("TouristsCore.Entities.MessageVisibility", b =>
                 {
-                    b.Property<Guid>("MessageId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("MessageId")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("DeletedAt")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("MessageId", "UserId");
@@ -402,19 +493,27 @@ namespace TouristsRepository.Migrations
 
             modelBuilder.Entity("TouristsCore.Entities.Payment", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Amount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<Guid>("BookingId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Provider")
                         .IsRequired()
@@ -428,6 +527,9 @@ namespace TouristsRepository.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BookingId")
@@ -438,12 +540,14 @@ namespace TouristsRepository.Migrations
 
             modelBuilder.Entity("TouristsCore.Entities.Review", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("BookingId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Comment")
                         .HasColumnType("nvarchar(max)");
@@ -451,14 +555,20 @@ namespace TouristsRepository.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("GuideId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GuideId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<int>("Rating")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -472,9 +582,11 @@ namespace TouristsRepository.Migrations
 
             modelBuilder.Entity("TouristsCore.Entities.Tour", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("City")
                         .IsRequired()
@@ -487,6 +599,9 @@ namespace TouristsRepository.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -494,8 +609,8 @@ namespace TouristsRepository.Migrations
                     b.Property<int>("DurationMinutes")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("GuideProfileId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("GuideProfileId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -522,14 +637,57 @@ namespace TouristsRepository.Migrations
                     b.ToTable("Tours");
                 });
 
+            modelBuilder.Entity("TouristsCore.Entities.TourMedia", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FileId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsVideo")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TourId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FileId");
+
+                    b.HasIndex("TourId");
+
+                    b.ToTable("TourMedia");
+                });
+
             modelBuilder.Entity("TouristsCore.Entities.TouristProfile", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<Guid?>("AvatarFileId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AvatarFileId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Country")
                         .IsRequired()
@@ -538,14 +696,23 @@ namespace TouristsRepository.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Phone")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -578,6 +745,9 @@ namespace TouristsRepository.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -586,6 +756,9 @@ namespace TouristsRepository.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<bool>("LockoutEnabled")
@@ -677,7 +850,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -686,7 +859,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -695,7 +868,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -704,13 +877,13 @@ namespace TouristsRepository.Migrations
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("TouristsCore.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -719,7 +892,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -737,7 +910,7 @@ namespace TouristsRepository.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("TouristsCore.Entities.User", "Tourist")
+                    b.HasOne("TouristsCore.Entities.TouristProfile", "Tourist")
                         .WithMany()
                         .HasForeignKey("TouristId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -755,7 +928,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.Chat", "Chat")
                         .WithMany("Participants")
                         .HasForeignKey("ChatId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("TouristsCore.Entities.User", "User")
@@ -784,7 +957,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.GuideProfile", "GuideProfile")
                         .WithMany("GuideLanguages")
                         .HasForeignKey("GuideProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("TouristsCore.Entities.Language", "Language")
@@ -808,7 +981,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.User", "User")
                         .WithOne("GuideProfile")
                         .HasForeignKey("TouristsCore.Entities.GuideProfile", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("AvatarFile");
@@ -825,7 +998,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.Chat", "Chat")
                         .WithMany("Messages")
                         .HasForeignKey("ChatId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("TouristsCore.Entities.User", "Sender")
@@ -846,7 +1019,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.Message", "Message")
                         .WithMany("HiddenForUsers")
                         .HasForeignKey("MessageId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("TouristsCore.Entities.User", "User")
@@ -865,7 +1038,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.Booking", "Booking")
                         .WithOne("Payment")
                         .HasForeignKey("TouristsCore.Entities.Payment", "BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Booking");
@@ -876,7 +1049,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.Booking", "Booking")
                         .WithOne()
                         .HasForeignKey("TouristsCore.Entities.Review", "BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("TouristsCore.Entities.GuideProfile", "Guide")
@@ -895,10 +1068,29 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.GuideProfile", "GuideProfile")
                         .WithMany("Tours")
                         .HasForeignKey("GuideProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("GuideProfile");
+                });
+
+            modelBuilder.Entity("TouristsCore.Entities.TourMedia", b =>
+                {
+                    b.HasOne("TouristsCore.Entities.FileRecord", "File")
+                        .WithMany()
+                        .HasForeignKey("FileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TouristsCore.Entities.Tour", "Tour")
+                        .WithMany("Media")
+                        .HasForeignKey("TourId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("File");
+
+                    b.Navigation("Tour");
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.TouristProfile", b =>
@@ -911,7 +1103,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.User", "User")
                         .WithOne("TouristProfile")
                         .HasForeignKey("TouristsCore.Entities.TouristProfile", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("AvatarFile");
@@ -961,7 +1153,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -972,7 +1164,7 @@ namespace TouristsRepository.Migrations
                     b.HasOne("TouristsCore.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -1011,6 +1203,8 @@ namespace TouristsRepository.Migrations
             modelBuilder.Entity("TouristsCore.Entities.Tour", b =>
                 {
                     b.Navigation("Bookings");
+
+                    b.Navigation("Media");
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.User", b =>

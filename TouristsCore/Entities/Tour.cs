@@ -2,7 +2,7 @@ namespace TouristsCore.Entities;
 
 public class Tour : BaseEntity
 {
-    public Guid GuideProfileId { get; set; }
+    public int GuideProfileId { get; set; }
     public GuideProfile GuideProfile { get; set; }
     public string Title { get; set; }
     public string Description { get; set; }
