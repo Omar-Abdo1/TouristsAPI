@@ -38,10 +38,12 @@ public class TouristsContext : IdentityDbContext<User,IdentityRole<Guid>,Guid>
                // Apply Global Query Filter (Hide Deleted Items)
                if (typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
                {
-                    var parameter = Expression.Parameter(entityType.ClrType, "e");
-                    var property = Expression.Property(parameter, nameof(ISoftDeletable.IsDeleted));
-                    var falseConstant = Expression.Constant(false);
-                    var lambda = Expression.Lambda(Expression.Equal(property, falseConstant), parameter);
+                    // build the query   e=>e.IsDeleted == false 
+                    var parameter = Expression.Parameter(entityType.ClrType, "e"); // e
+                    var property = Expression.Property(parameter, nameof(ISoftDeletable.IsDeleted)); // isDeleted
+                    var falseConstant = Expression.Constant(false); // false constant
+                    var lambda = Expression.Lambda(Expression.Equal(property, falseConstant), parameter); 
+                    // combination 
 
                     builder.Entity(entityType.ClrType).HasQueryFilter(lambda);
                }

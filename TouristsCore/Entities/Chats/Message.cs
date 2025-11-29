@@ -12,6 +12,9 @@ public class Message : BaseEntity
     public DateTime SentAt { get; set; } = DateTime.UtcNow;
     public bool IsDeletedGlobally { get; set; } = false; // if admin/sender deletes globally
     
+    public int? ReplyToMessageId { get; set; }
+    public Message? ReplyToMessage { get; set; }
+    
     // Navigation to the "Stickers"
     public ICollection<MessageVisibility> HiddenForUsers { get; set; }
 }
