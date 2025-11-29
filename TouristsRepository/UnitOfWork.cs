@@ -2,6 +2,7 @@ using System.Collections;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TouristsCore;
+using TouristsCore.Entities;
 using TouristsCore.Repositories;
 
 namespace TouristsRepository;
@@ -25,7 +26,7 @@ public class UnitOfWork : IUnitOfWork
 
     public DbContext Context { get => _context; }
 
-    public IGenericRepository<T> Repository<T>() where T : class
+    public IGenericRepository<T> Repository<T>() where T : BaseEntity
     {
         var Type = typeof(T).Name;
         if (!_repositories.ContainsKey(Type)) // First Time

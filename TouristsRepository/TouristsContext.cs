@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -31,6 +32,30 @@ public class TouristsContext : IdentityDbContext<User,IdentityRole<Guid>,Guid>
           builder.Entity<IdentityUserLogin<Guid>>().ToTable("UserLogins");
           builder.Entity<IdentityRoleClaim<Guid>>().ToTable("RoleClaims");
           builder.Entity<IdentityUserToken<Guid>>().ToTable("UserTokens");
+          
+          foreach (var entityType in builder.Model.GetEntityTypes())
+          {
+               // Apply Global Query Filter (Hide Deleted Items)
+               if (typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
+               {
+                    var parameter = Expression.Parameter(entityType.ClrType, "e");
+                    var property = Expression.Property(parameter, nameof(ISoftDeletable.IsDeleted));
+                    var falseConstant = Expression.Constant(false);
+                    var lambda = Expression.Lambda(Expression.Equal(property, falseConstant), parameter);
+
+                    builder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+               }
+
+               // (Change Cascade to Restrict globally)
+               var foreignKeys = entityType.GetForeignKeys()
+                    .Where(fk => !fk.IsOwnership && fk.DeleteBehavior == DeleteBehavior.Cascade);
+
+               foreach (var fk in foreignKeys)
+               {
+                    fk.DeleteBehavior = DeleteBehavior.Restrict;
+               }
+          }   
+          
      }
      public DbSet<GuideProfile>  GuideProfiles { get; set; }
      public DbSet<TouristProfile>   TouristProfiles { get; set; }
@@ -41,6 +66,7 @@ public class TouristsContext : IdentityDbContext<User,IdentityRole<Guid>,Guid>
      public DbSet<Payment>   Payments { get; set; }
      public  DbSet<Review>    Reviews { get; set; }
      public DbSet<Tour>       Tours { get; set; }
+     public DbSet<TourMedia> TourMedia { get; set; }
      // Chat : 
      public DbSet<Chat>       Chats { get; set; }
      public DbSet<ChatParticipant>   ChatParticipants { get; set; }

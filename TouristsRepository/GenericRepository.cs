@@ -1,10 +1,11 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using TouristsCore.Entities;
 using TouristsCore.Repositories;
 
 namespace TouristsRepository;
 
-public class GenericRepository<T> : IGenericRepository<T> where T : class
+public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
 {
    private readonly TouristsContext _context;
 
@@ -17,7 +18,12 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
 
     public void Update(T entity) => _context.Set<T>().Update(entity);
 
-    public void Delete(T entity) => _context.Set<T>().Remove(entity);
+    public void Delete(T entity)
+    {
+        entity.IsDeleted = true;
+        entity.DeletedAt = DateTime.UtcNow;
+        Update(entity);
+    }
     
     public void DeleteRange(IEnumerable<T> entities) => _context.Set<T>().RemoveRange(entities);
     
@@ -34,6 +40,17 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         query = includes.Aggregate(query, (cur, next) => cur.Include(next));
 
         return await query.FirstOrDefaultAsync();
+    }
+
+    public Task<T?> GetByIdAsync(int id, bool asNoTracking = false, params Expression<Func<T, object>>[] includes)
+    {
+        var query = _context.Set<T>().AsQueryable();
+        if (asNoTracking)
+            query = query.AsNoTracking();
+        query = query.Where(e => e.Id == id);
+        if (includes is not null && includes.Any())
+            query = includes.Aggregate(query, (cur, next) => cur.Include(next));
+        return query.FirstOrDefaultAsync();
     }
 
     public async Task<int> CountAsync(Expression<Func<T, bool>> criteria = null)

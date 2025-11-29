@@ -2,11 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TouristsCore.Entities;
 
-public class Review
+public class Review : BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
 
-    public Guid BookingId { get; set; }
+    public int BookingId { get; set; }
     public Booking Booking { get; set; }
 
     public Guid GuideId { get; set; } 
@@ -15,8 +14,4 @@ public class Review
     [Range(1,5)]
     public int Rating { get; set; }
     public string? Comment { get; set; }
-
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    public bool IsDeleted { get; set; } = false;
 }

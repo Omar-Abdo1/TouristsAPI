@@ -1,8 +1,9 @@
 using System.Linq.Expressions;
+using TouristsCore.Entities;
 
 namespace TouristsCore.Repositories;
 
-public interface IGenericRepository<T> where T : class
+public interface IGenericRepository<T> where T : BaseEntity
 {
     void Add(T entity);
     void Update(T entity);
@@ -11,6 +12,8 @@ public interface IGenericRepository<T> where T : class
     
     Task<T?> GetEntityByConditionAsync(Expression<Func<T, bool>> expression, bool asNoTracking = false,
         params Expression<Func<T, object>>[] includes);
+    
+    Task<T?>GetByIdAsync(int id,bool asNoTracking=false,params Expression<Func<T, object>>[] includes);
 
     Task<int> CountAsync(Expression<Func<T, bool>> criteria = null); 
     

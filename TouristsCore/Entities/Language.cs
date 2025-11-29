@@ -1,8 +1,7 @@
 namespace TouristsCore.Entities;
 
-public class Language
+public class Language : BaseEntity
 {
-    public int Id { get; set; }
     public string Name { get; set; }
     public ICollection<GuideLanguage> GuideLanguages { get; set; }
 }
