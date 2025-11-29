@@ -15,6 +15,8 @@ public class Message : BaseEntity
     public int? ReplyToMessageId { get; set; }
     public Message? ReplyToMessage { get; set; }
     
+    ICollection<Message>? ReplyToMessages { get; set; }
+    
     // Navigation to the "Stickers"
     public ICollection<MessageVisibility> HiddenForUsers { get; set; }
 }

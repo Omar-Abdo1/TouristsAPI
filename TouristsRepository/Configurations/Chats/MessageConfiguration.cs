@@ -23,8 +23,8 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
             .HasForeignKey(m => m.SenderId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(m => m.ReplyToMessage) // message has one reply
-            .WithMany() // message can have more than reply
+        builder.HasOne(m => m.ReplyToMessage) // message has one reply   ChildSide
+            .WithMany() // message can have more than reply  ParentSide  can have multiple childers
             .HasForeignKey(m => m.ReplyToMessageId)
             .OnDelete(DeleteBehavior.Restrict);
 
