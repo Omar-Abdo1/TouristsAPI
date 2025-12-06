@@ -6,7 +6,9 @@ using TouristsAPI.Helpers;
 using TouristsCore;
 using TouristsCore.Entities;
 using TouristsCore.Repositories;
+using TouristsCore.Services;
 using TouristsRepository;
+using TouristsService;
 
 namespace TouristsAPI.ExtensionsMethod;
 
@@ -29,7 +31,9 @@ public static class ApplicationServicesExtension
 
         // Services :
         services.AddAutoMapper(typeof(MappingProfile));
-
+        services.AddScoped<IAuthService,AuthService>();
+        services.AddScoped<ITokenService, TokenService>();
+        
         
 
         #region Validation Error 
