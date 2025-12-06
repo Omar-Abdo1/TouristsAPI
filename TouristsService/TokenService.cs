@@ -19,7 +19,7 @@ public class TokenService : ITokenService
         _config = config;
     }
 
-    public async Task<string> CreateTokenAsync(User user, UserManager<User> userManager)
+    public async Task<JwtSecurityToken> CreateTokenAsync(User user, UserManager<User> userManager)
     {
         
         // Fill the PayLoad
@@ -32,6 +32,7 @@ public class TokenService : ITokenService
             new Claim(JwtRegisteredClaimNames.Email,  user.Email??string.Empty),
             new Claim(ClaimTypes.MobilePhone, user.PhoneNumber??string.Empty),
             new Claim(ClaimTypes.Name,user.UserName??string.Empty),
+            new Claim(ClaimTypes.NameIdentifier,user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Sub ,user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString()) ,
             // Token Generated ID so it changes every Time
@@ -54,12 +55,12 @@ public class TokenService : ITokenService
             claims:userClaims,
             signingCredentials: new SigningCredentials(AuthKey , SecurityAlgorithms.HmacSha256Signature)
         );
-        return new JwtSecurityTokenHandler().WriteToken(Token);
+        return Token;
     }
     
     public RefreshToken GenerateRefreshToken()
     {
-        var randomNumber = new byte[64];
+        var randomNumber = new byte[32];
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(randomNumber);
         return new RefreshToken
