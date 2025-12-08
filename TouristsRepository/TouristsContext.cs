@@ -47,6 +47,12 @@ public class TouristsContext : IdentityDbContext<User,IdentityRole<Guid>,Guid>
 
                     builder.Entity(entityType.ClrType).HasQueryFilter(lambda);
                }
+               
+               // Make Non - Clustered Index on CreatedAt For Fast Sorting and Cursor Pagination 
+               if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+               {
+                    builder.Entity(entityType.ClrType).HasIndex(nameof(BaseEntity.CreatedAt));
+               }
 
                // (Change Cascade to Restrict globally)
                var foreignKeys = entityType.GetForeignKeys()
