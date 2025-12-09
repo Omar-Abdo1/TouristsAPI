@@ -177,6 +177,9 @@ public class AuthService : IAuthService
         user.RefreshTokens.Add(refreshToken);
         await _touristsContext.SaveChangesAsync();
 
+        var roles = await _userManager.GetRolesAsync(user);
+        string finalRole = roles.Contains("Guide") ? "Guide" : "Tourist";
+
         return new AuthResponseDto
         {
             IsAuthenticated = true,
@@ -184,7 +187,7 @@ public class AuthService : IAuthService
             ExpiresOn = jwtToken.ValidTo,
             RefreshToken = refreshToken.Token,
             RefreshTokenExpiration = refreshToken.ExpiresOn,
-            Role = (await _userManager.GetRolesAsync(user)).FirstOrDefault(),
+            Role = finalRole,
             Username = user.UserName,
             Email = user.Email  
         };
