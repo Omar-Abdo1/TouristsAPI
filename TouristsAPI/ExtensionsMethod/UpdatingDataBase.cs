@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TouristsCore.Entities;
 using TouristsRepository;
+using TouristsRepository.DataSeeding;
 
 namespace TouristsAPI.ExtensionsMethod;
 
@@ -22,6 +23,7 @@ public static class UpdatingDataBase
             // Seed data if necessary
             var seeder = new DbSeeder(dbContext, userManger, roleManger);
             await seeder.SeedAsync();
+            await AdminSeeder.SeedUsersAsync(userManger);
         }
         catch (Exception ex)
         {
