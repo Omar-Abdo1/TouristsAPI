@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TouristsRepository;
 
@@ -11,9 +12,11 @@ using TouristsRepository;
 namespace TouristsRepository.Migrations
 {
     [DbContext(typeof(TouristsContext))]
-    partial class TouristsContextModelSnapshot : ModelSnapshot
+    [Migration("20251209200332_MakeSomeAttributesNullable")]
+    partial class MakeSomeAttributesNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -364,17 +367,11 @@ namespace TouristsRepository.Migrations
                     b.Property<int?>("ExperienceYears")
                         .HasColumnType("int");
 
-                    b.Property<string>("FullName")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsVerified")
                         .HasColumnType("bit");
-
-                    b.Property<string>("Phone")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("RatePerHour")
                         .HasPrecision(18, 2)

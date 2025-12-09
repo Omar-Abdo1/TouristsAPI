@@ -43,7 +43,7 @@ public class AuthService : IAuthService
         await _userManager.AddToRoleAsync(user, model.Role);
         if (model.Role.ToUpper() == "GUIDE")
         {
-            await _touristsContext.GuideProfiles.AddAsync(new GuideProfile() {UserId   = user.Id,Bio = ""});
+            await _touristsContext.GuideProfiles.AddAsync(new GuideProfile() {UserId   = user.Id,Bio = "",FullName = model.Username});
         }
         else
         {

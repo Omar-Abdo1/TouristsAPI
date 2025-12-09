@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using TouristsAPI.ErrorResponses;
+using TouristsCore.DTOS.Accounts;
 using TouristsCore.Services;
 
 namespace TouristsAPI.Controllers;
@@ -46,8 +47,66 @@ public class ProfileController : ControllerBase
         return Ok(new { message = "Avatar updated successfully" });
     }
     
+    [HttpPut("tourist")]
+    public async Task<IActionResult> UpdateTouristProfile(TouristProfileUpdateDto dto)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _profileService.UpdateTouristProfileAsync(userId, dto);
+            var res = await _profileService.GetUserProfileAsync(userId);
+            return Ok(res);
+        }
+        catch (Exception ex)
+        {
+            //todo Log the error in a real app
+            return BadRequest(new ApiErrorResponse(400,ex.Message));
+        }
+    }
+    [Authorize(Roles = "Guide")] 
+    [HttpPut("guide")]
+    public async Task<IActionResult> UpdateGuideProfile(GuideProfileUpdateDto dto)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var result = await _profileService.UpdateGuideProfileAsync(userId, dto);
+            var res = await _profileService.GetUserProfileAsync(userId);
+            return Ok(res);
+        }
+        catch (Exception ex)
+        {
+            //todo Log the error in a real app
+            return BadRequest(new ApiErrorResponse(400,ex.Message));
+        }
+    }
+    [HttpPost("become-guide")]
+    public async Task<IActionResult> BecomeGuide()
+    {
+        var userId = GetCurrentUserId();
+        
+        var (success, message) = await _profileService.BecomeGuideAsync(userId);
+
+        if (!success) return BadRequest(message);
+
+        return Ok(new { message });
+    }
+    
+    [AllowAnonymous]
+    [HttpGet("guide/{userId}")]
+    public async Task<IActionResult> GetGuidePublicProfile(string userId)
+    {
+        var result = await _profileService.GetGuidePublicProfileAsync(userId);
+
+        if (result == null) return NotFound("Guide not found or profile incomplete.");
+
+        return Ok(result);
+    }
+    
+    
     public class ChangeAvatarDto
     {
         public int FileId { get; set; }
     }
+    private string GetCurrentUserId()=>User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 }
