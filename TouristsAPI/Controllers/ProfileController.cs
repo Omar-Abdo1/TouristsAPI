@@ -12,12 +12,10 @@ namespace TouristsAPI.Controllers;
 [Authorize]
 public class ProfileController : ControllerBase
 {
-    private readonly IAuthService _authService;
     private readonly IProfileService _profileService;
 
-    public ProfileController(IAuthService authService,IProfileService  profileService)
+    public ProfileController(IProfileService  profileService)
     {
-        _authService = authService;
         _profileService = profileService;
     }
     
@@ -30,7 +28,7 @@ public class ProfileController : ControllerBase
         if (userId == null)
             return Unauthorized(new ApiErrorResponse(401));
 
-        var profile = await _authService.GetUserProfileAsync(userId);
+        var profile = await _profileService.GetUserProfileAsync(userId);
 
         if (profile is null)
             return NotFound(new ApiErrorResponse(404, "User not found"));

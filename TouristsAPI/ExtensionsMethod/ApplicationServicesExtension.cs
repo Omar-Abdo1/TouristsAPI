@@ -35,7 +35,7 @@ public static class ApplicationServicesExtension
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IFileService,FileService>();
         services.AddScoped<IProfileService,ProfileService>();
-        
+        services.AddScoped<ITourService,TourService>();
 
         #region Validation Error 
         services.Configure<ApiBehaviorOptions>(options =>

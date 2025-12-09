@@ -130,51 +130,7 @@ public class AuthService : IAuthService
         
         return await CreateAuthResponse(user);
     }
-
-    public async Task<UserProfileDto> GetUserProfileAsync(string userId)
-    {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return null;
-        string avatarUrl = null;
-        var role = (await _userManager.GetRolesAsync(user)).FirstOrDefault();
-        if (role.ToUpper() == "GUIDE")
-        {
-            var guide = await _touristsContext.GuideProfiles
-                .Include(g => g.AvatarFile)
-                .FirstOrDefaultAsync(g => g.UserId == user.Id);
-            if (guide?.AvatarFile != null)
-            {
-                avatarUrl = $"/uploads/{guide.AvatarFile.FileName}"; 
-            }
-        }
-        else 
-        {
-            var tourist = await _touristsContext.TouristProfiles
-                .Include(t => t.AvatarFile)
-                .FirstOrDefaultAsync(t => t.UserId == user.Id);
-
-            if (tourist?.AvatarFile != null)
-            {
-                avatarUrl = $"/uploads/{tourist.AvatarFile.FileName}";
-            }
-        }
-
-        var logins = await _userManager.GetLoginsAsync(user);
-        var providers = logins.Select(l => l.LoginProvider).ToList();
-        var hasPassword = await _userManager.HasPasswordAsync(user);
-
-        return new UserProfileDto
-        {
-            Id = user.Id.ToString(),
-            Username = user.UserName,
-            Email = user.Email,
-            Role = role,
-            AvatarUrl = avatarUrl, // send to Front
-            LinkedProviders = providers,
-            HasPassword = hasPassword
-        };
-    }
-
+    
     public async Task<AuthResponseDto> RefreshTokenAsync(string token)
     {
          
