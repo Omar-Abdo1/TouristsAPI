@@ -71,25 +71,6 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Token revoked successfully" });
     }
     
-    [Authorize]
-    [HttpGet("Me")]
-    public async Task<IActionResult> GetMyProfile()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) 
-                     ?? User.FindFirstValue("sub"); 
-
-        if (userId == null)
-            return Unauthorized(new ApiErrorResponse(401));
-
-        var profile = await _authService.GetUserProfileAsync(userId);
-
-        if (profile is null)
-            return NotFound(new ApiErrorResponse(404, "User not found"));
-
-        return Ok(profile);
-    }
-    
-    
     public class TokenRequestDto
     {
         public string Token { get; set; }

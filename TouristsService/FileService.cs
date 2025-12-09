@@ -25,7 +25,9 @@ public class FileService : IFileService
         if(file==null || file.Length==0)
             throw new ArgumentException("file is null or empty");
         
-        var extension = Path.GetExtension(file.FileName);
+        folderName = folderName.Trim().ToLower();
+        
+        var extension = Path.GetExtension(file.FileName).Trim().ToLower();
 
         if(!allowedExtensions.Contains(extension))
         {
@@ -35,10 +37,10 @@ public class FileService : IFileService
         
         string uploadFoler = Path.Combine(_hostingEnvironment.WebRootPath, "uploads", folderName); // from home in linux or /C on windows ... ~/wwwroot/upload/foldername
 
-        if (Directory.Exists(uploadFoler))
+        if (!Directory.Exists(uploadFoler))
             Directory.CreateDirectory(uploadFoler);
 
-        string uniqueFileName = $"{Guid.NewGuid().ToString()} {extension}" ;
+        string uniqueFileName = $"{Guid.NewGuid().ToString()}{extension}" ;
         string filePath = Path.Combine(uploadFoler,uniqueFileName);
 
         using (var filestream = new FileStream(filePath, FileMode.Create)) // save it to disk

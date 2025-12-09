@@ -20,7 +20,7 @@ public class FileController : ControllerBase
     }
 
     [HttpPost("upload")]
-    public async Task<IActionResult> Upload([FromBody] IFormFile file, [FromQuery]string folderName = "common")
+    public async Task<IActionResult> Upload(IFormFile file, [FromQuery]string folderName = "common")
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         try

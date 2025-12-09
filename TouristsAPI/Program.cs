@@ -55,10 +55,10 @@ public class Program
         }
         
         app.UseCors("My  Policy");
+        app.UseStaticFiles();
         
         app.UseStatusCodePagesWithReExecute("/error/{0}");
         
-        app.UseStaticFiles();
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
