@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TouristsRepository;
 
@@ -11,9 +12,11 @@ using TouristsRepository;
 namespace TouristsRepository.Migrations
 {
     [DbContext(typeof(TouristsContext))]
-    partial class TouristsContextModelSnapshot : ModelSnapshot
+    [Migration("20251209001117_Modify the FileRecord Entity")]
+    partial class ModifytheFileRecordEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

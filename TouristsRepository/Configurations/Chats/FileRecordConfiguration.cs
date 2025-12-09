@@ -8,7 +8,7 @@ public class FileRecordConfiguration : IEntityTypeConfiguration<FileRecord>
 {
     public void Configure(EntityTypeBuilder<FileRecord> builder)
     {
-        builder.Property(f => f.SizeBytes).IsRequired();
+        builder.Property(f => f.Size).IsRequired();
         
         // Owner -> File
         // Rule: Restrict. We don't want files disappearing if a user is deleted 

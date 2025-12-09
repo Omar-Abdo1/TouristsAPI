@@ -33,6 +33,7 @@ public static class ApplicationServicesExtension
         services.AddAutoMapper(typeof(MappingProfile));
         services.AddScoped<IAuthService,AuthService>();
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IFileService,FileService>();
         
         
 

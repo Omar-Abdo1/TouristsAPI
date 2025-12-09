@@ -1,6 +1,6 @@
 namespace TouristsCore.Entities;
 
-public class TouristProfile : BaseEntity // optional to Fill 
+public class TouristProfile : BaseEntity,IHasAvatar // optional to Fill 
 {
 
     public Guid UserId { get; set; }

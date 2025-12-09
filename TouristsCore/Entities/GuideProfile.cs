@@ -1,6 +1,6 @@
 namespace TouristsCore.Entities;
 
-public class GuideProfile : BaseEntity
+public class GuideProfile : BaseEntity,IHasAvatar
 {
     public Guid UserId { get; set; }
     public User User { get; set; }
