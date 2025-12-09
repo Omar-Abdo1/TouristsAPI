@@ -22,7 +22,8 @@ public static class ApplicationServicesExtension
         });
 
         services.AddIdentity<User, IdentityRole<Guid>>()
-            .AddEntityFrameworkStores<TouristsContext>();
+            .AddEntityFrameworkStores<TouristsContext>()
+            .AddDefaultTokenProviders(); // to generate token for forgetPassword
 
         // Repositotries :
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
