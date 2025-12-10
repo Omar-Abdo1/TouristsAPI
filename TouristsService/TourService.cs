@@ -2,6 +2,7 @@ using Google.Apis.Auth.OAuth2.Web;
 using Microsoft.EntityFrameworkCore;
 using TouristsAPI.Helpers;
 using TouristsCore;
+using TouristsCore.DTOS.Schedule;
 using TouristsCore.DTOS.Tours;
 using TouristsCore.Entities;
 using TouristsCore.Services;
@@ -33,6 +34,7 @@ public class TourService : ITourService
             City = model.City,
             Country = model.Country,
             IsPublished = true,
+            MaxGroupSize = model.MaxGroupSize,
             Media = new List<TourMedia>()
         };
         int currentIndex = 0;
@@ -73,14 +75,25 @@ public class TourService : ITourService
                 IsPublished = t.IsPublished,
                 CreatedAt = t.CreatedAt,
                 UpdateAt = t.UpdatedAt,
+                MaxGroupSize = t.MaxGroupSize,
 
                 GuideName = t.GuideProfile.User != null ? t.GuideProfile.User.UserName : null,
                 GuideAvatarUrl = t.GuideProfile.AvatarFile != null ? t.GuideProfile.AvatarFile.FilePath : null,
                 
+                AvailableSchedules = t.Schedules.Where(s=>s.StartTime>DateTime.UtcNow && s.AvailableSeats>0)
+                    .OrderBy(s => s.StartTime)
+                    .Select(s=>new ScheduleOptionDto
+                    {
+                        ScheduleId = s.Id,
+                        StartTime = s.StartTime,
+                        AvailableSeats = s.AvailableSeats
+                    }).ToList(),
+                    
                 ImageUrls = t.Media
                     .OrderBy(m => m.OrderIndex)
                     .Select(m => m.File.FilePath)
                     .ToList()
+                
             })
             .AsNoTracking()
             .FirstOrDefaultAsync();
@@ -118,6 +131,16 @@ public class TourService : ITourService
                     Title = t.Title,
                     Price = t.Price,
                     City = t.City,
+                    MaxGroupSize = t.MaxGroupSize,
+                    
+                    AvailableSchedules = t.Schedules.Where(s=>s.StartTime>DateTime.UtcNow && s.AvailableSeats>0)
+                        .OrderBy(s => s.StartTime)
+                        .Select(s=>new ScheduleOptionDto
+                        {
+                            ScheduleId = s.Id,
+                            StartTime = s.StartTime,
+                            AvailableSeats = s.AvailableSeats
+                        }).ToList(),
                     
                     GuideName = t.GuideProfile.User != null ? t.GuideProfile.User.UserName : null,
 
@@ -161,6 +184,7 @@ public class TourService : ITourService
         tour.DurationMinutes = model.DurationMinutes;
         tour.City = model.City;
         tour.Country = model.Country;
+        tour.MaxGroupSize = model.MaxGroupSize;
 
         if (model.MediaIds != null)
         {
@@ -249,6 +273,16 @@ public class TourService : ITourService
                 IsPublished = t.IsPublished,
                 CreatedAt = t.CreatedAt,
                 UpdateAt = t.UpdatedAt,
+                MaxGroupSize = t.MaxGroupSize,
+                
+                AvailableSchedules = t.Schedules.Where(s=>s.StartTime>DateTime.UtcNow && s.AvailableSeats>0)
+                    .OrderBy(s => s.StartTime)
+                    .Select(s=>new ScheduleOptionDto
+                    {
+                        ScheduleId = s.Id,
+                        StartTime = s.StartTime,
+                        AvailableSeats = s.AvailableSeats
+                    }).ToList(),
     
                 GuideName = t.GuideProfile.User != null ? t.GuideProfile.User.UserName : null,
                 GuideAvatarUrl = t.GuideProfile.AvatarFile != null ? t.GuideProfile.AvatarFile.FilePath : null,

@@ -23,6 +23,9 @@ public class CreateTourDto
 
     [Required]
     public string Country { get; set; }
+    
+    [Required]
+    public int MaxGroupSize { get; set; }
         
     // The IDs of photos/videos previously uploaded by user :)
     public List<int> MediaIds { get; set; } = new List<int>();
