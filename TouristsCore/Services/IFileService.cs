@@ -6,5 +6,5 @@ namespace TouristsCore.Services;
 public interface IFileService
 {
     Task<FileRecord> SaveFileAsync(IFormFile file, string folderName,Guid userId);
-    Task DeleteFileAsync(string fileName,string folderName);
+    Task<bool> DeleteFileAsync(int id,Guid userId,bool isAdmin);
 }

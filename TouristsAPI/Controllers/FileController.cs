@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using TouristsAPI.ErrorResponses;
+using TouristsCore.Entities;
 using TouristsCore.Services;
 
 namespace TouristsAPI.Controllers;
@@ -37,6 +38,34 @@ public class FileController : ControllerBase
         {
                 return BadRequest(new ApiErrorResponse(400, ex.Message));
         } 
+    }
+    
+    [Authorize]
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteFile(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        bool isAdmin = User.IsInRole("Admin");
+        try
+        {
+            await _fileService.DeleteFileAsync(id,Guid.Parse(userId),isAdmin);
+            return Ok(new
+            {
+                Message = "File Moved To Trash Successfully"
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new ApiErrorResponse(404, ex.Message));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+             return Unauthorized(new ApiErrorResponse(403, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiErrorResponse(400, ex.Message));
+        }
     }
     
     

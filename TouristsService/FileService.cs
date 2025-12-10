@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using TouristsCore;
 using TouristsCore.Entities;
 using TouristsCore.Services;
 using TouristsRepository;
@@ -10,13 +11,15 @@ public class FileService : IFileService
 {
     private readonly TouristsContext _touristsContext;
     private readonly IWebHostEnvironment _hostingEnvironment;
-    
+    private readonly IUnitOfWork _unitOfWork;
+
     private readonly string[] allowedExtensions = { ".jpg", ".jpeg", ".png", ".mp4", ".mov" };
     
-    public FileService(TouristsContext  touristsContext,IWebHostEnvironment  hostingEnvironment)
+    public FileService(TouristsContext  touristsContext,IWebHostEnvironment  hostingEnvironment,IUnitOfWork  unitOfWork)
     {
         _touristsContext = touristsContext;
         _hostingEnvironment = hostingEnvironment;
+        _unitOfWork = unitOfWork;
     }
     
     public async Task<FileRecord> SaveFileAsync(IFormFile file, string folderName,Guid userId)
@@ -63,9 +66,24 @@ public class FileService : IFileService
         return fileRecord;
     }
 
-    public Task DeleteFileAsync(string fileName, string folderName)
+    public async Task<bool> DeleteFileAsync(int id,Guid userId,bool isAdmin)
     {
-        // TODO: Implement this in Phase 4 (Background Jobs)
-        return Task.CompletedTask;
+
+        var fileRecord = await _unitOfWork.Repository<FileRecord>().GetByIdAsync(id);
+        
+        if (fileRecord == null)
+            throw new KeyNotFoundException($"file with id {id} not found");
+
+        if (fileRecord.UserId != userId && !isAdmin)
+            throw new UnauthorizedAccessException("You do not own this file.");
+
+        _unitOfWork.Repository<FileRecord>().Delete(fileRecord);
+        
+        await _unitOfWork.CompleteAsync();
+        
+        // TODO: Implement this in Phase 4 (Background Jobs) 
+        // todo here must invoke the background job that delete physically from server 
+        
+        return true;
     }
 }
