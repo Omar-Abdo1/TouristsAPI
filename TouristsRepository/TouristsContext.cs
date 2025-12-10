@@ -83,6 +83,7 @@ public class TouristsContext : IdentityDbContext<User,IdentityRole<Guid>,Guid>
      public  DbSet<Review>    Reviews { get; set; }
      public DbSet<Tour>       Tours { get; set; }
      public DbSet<TourMedia> TourMedia { get; set; }
+     public DbSet<TourSchedule>  TourSchedule { get; set; }
      // Chat : 
      public DbSet<Chat>       Chats { get; set; }
      public DbSet<ChatParticipant>   ChatParticipants { get; set; }

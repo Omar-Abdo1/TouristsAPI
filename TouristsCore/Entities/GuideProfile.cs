@@ -17,5 +17,6 @@ public class GuideProfile : BaseEntity,IHasAvatar
     // Navigation
     public ICollection<Tour> Tours { get; set; }
     public ICollection<GuideLanguage> GuideLanguages { get; set; }
-    
+    public ICollection<Review>  Reviews { get; set; } = new List<Review>();
+
 }

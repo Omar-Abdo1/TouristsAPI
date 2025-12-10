@@ -13,4 +13,5 @@ public class TouristProfile : BaseEntity,IHasAvatar // optional to Fill
     public FileRecord? AvatarFile { get; set; }
     
     ICollection<Booking>?  Bookings { get; set; }
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
 }
