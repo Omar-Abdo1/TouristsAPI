@@ -33,6 +33,14 @@ public class TouristsContext : IdentityDbContext<User,IdentityRole<Guid>,Guid>
           builder.Entity<IdentityRoleClaim<Guid>>().ToTable("RoleClaims");
           builder.Entity<IdentityUserToken<Guid>>().ToTable("UserTokens");
           
+          builder.Entity<TouristProfile>()
+               .HasIndex(t => t.UserId)
+               .IsUnique();
+
+          builder.Entity<GuideProfile>()
+               .HasIndex(g => g.UserId)
+               .IsUnique();
+          
           foreach (var entityType in builder.Model.GetEntityTypes())
           {
                // Apply Global Query Filter (Hide Deleted Items)

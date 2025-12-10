@@ -206,7 +206,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasIndex("TouristId");
 
-                    b.ToTable("Bookings");
+                    b.ToTable("Bookings", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.Chat", b =>
@@ -233,7 +233,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasIndex("CreatedAt");
 
-                    b.ToTable("Chats");
+                    b.ToTable("Chats", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.ChatParticipant", b =>
@@ -271,7 +271,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ChatParticipants");
+                    b.ToTable("ChatParticipants", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.FileRecord", b =>
@@ -322,7 +322,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("FileRecords");
+                    b.ToTable("FileRecords", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.GuideLanguage", b =>
@@ -337,7 +337,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasIndex("LanguageId");
 
-                    b.ToTable("GuideLanguages");
+                    b.ToTable("GuideLanguages", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.GuideProfile", b =>
@@ -397,7 +397,7 @@ namespace TouristsRepository.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("GuideProfiles");
+                    b.ToTable("GuideProfiles", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.Language", b =>
@@ -428,7 +428,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasIndex("CreatedAt");
 
-                    b.ToTable("Languages");
+                    b.ToTable("Languages", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.Message", b =>
@@ -484,7 +484,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasIndex("SenderId");
 
-                    b.ToTable("Messages");
+                    b.ToTable("Messages", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.MessageVisibility", b =>
@@ -516,7 +516,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("MessageVisibility");
+                    b.ToTable("MessageVisibility", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.Payment", b =>
@@ -565,7 +565,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasIndex("CreatedAt");
 
-                    b.ToTable("Payments");
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.Review", b =>
@@ -609,7 +609,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasIndex("GuideId");
 
-                    b.ToTable("Reviews");
+                    b.ToTable("Reviews", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.Tour", b =>
@@ -668,7 +668,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasIndex("GuideProfileId");
 
-                    b.ToTable("Tours");
+                    b.ToTable("Tours", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.TourMedia", b =>
@@ -711,7 +711,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasIndex("TourId");
 
-                    b.ToTable("TourMedia");
+                    b.ToTable("TourMedia", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.TouristProfile", b =>
@@ -762,7 +762,7 @@ namespace TouristsRepository.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("TouristProfiles");
+                    b.ToTable("TouristProfiles", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.User", b =>
@@ -862,7 +862,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasKey("UserId", "ConnectionId");
 
-                    b.ToTable("UserConnections");
+                    b.ToTable("UserConnections", (string)null);
                 });
 
             modelBuilder.Entity("TouristsCore.Entities.UserGroup", b =>
@@ -878,7 +878,7 @@ namespace TouristsRepository.Migrations
 
                     b.HasKey("UserId", "GroupName");
 
-                    b.ToTable("UserGroups");
+                    b.ToTable("UserGroups", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -1182,7 +1182,7 @@ namespace TouristsRepository.Migrations
 
                             b1.HasKey("UserId", "Id");
 
-                            b1.ToTable("RefreshToken");
+                            b1.ToTable("RefreshToken", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("UserId");

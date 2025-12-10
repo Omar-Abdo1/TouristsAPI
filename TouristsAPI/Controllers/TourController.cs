@@ -35,6 +35,8 @@ public class TourController : ControllerBase
             return BadRequest(new ApiErrorResponse(400, ex.Message));
         }
     }
+    
+    
 
     [HttpGet("{id:int}", Name = "GetTourById")]
     public async Task<IActionResult> GetTourById(int id)
@@ -44,6 +46,7 @@ public class TourController : ControllerBase
             return NotFound(new ApiErrorResponse(404, $"No Tour With id : {id}"));
         return Ok(tour);
     }
+    
    
     [HttpGet]
     public async Task<IActionResult> GetTours([FromQuery]TourRequestDto request)
@@ -57,6 +60,7 @@ public class TourController : ControllerBase
              Data = tours
          });
     }
+    
 
     [HttpPut("{id:int}")]
     [Authorize(Roles = "Guide")]
@@ -75,6 +79,7 @@ public class TourController : ControllerBase
             return Forbid(ex.Message);
         }
     }
+    
 
     [HttpDelete("{id:int}")]
     [Authorize(Roles = "Guide")]
@@ -90,6 +95,60 @@ public class TourController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Forbid(ex.Message);
+        }
+    }
+    
+    [Authorize(Roles = "Guide")] 
+    [HttpGet("my-tours")]
+    public async Task<IActionResult> GetMyTours([FromQuery] PaginationArg arg)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var (tours,count) = await _tourService.GetMyToursAsync(userId, arg);
+            
+            return Ok(
+                new Pagination<TourDto>()
+                {
+                    PageIndex = arg.PageIndex,
+                    PageSize = arg.PageSize,
+                    Count = count,
+                    Data = tours
+                }
+                );
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+    }
+    
+    [Authorize(Roles = "Guide")]
+    [HttpPatch("{id:int}/publish")]
+    public async Task<IActionResult> TogglePublish(int id)
+    {
+        try 
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var newStatus = await _tourService.TogglePublishStatusAsync(id, userId);
+            
+            return Ok(new 
+            { 
+                Message = newStatus ? "Tour is now LIVE" : "Tour is now HIDDEN", 
+                IsPublished = newStatus 
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new ApiErrorResponse(404, ex.Message));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new ApiErrorResponse(403, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiErrorResponse(400, ex.Message));
         }
     }
     

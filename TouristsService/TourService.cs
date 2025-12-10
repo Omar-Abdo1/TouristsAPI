@@ -1,5 +1,6 @@
 using Google.Apis.Auth.OAuth2.Web;
 using Microsoft.EntityFrameworkCore;
+using TouristsAPI.Helpers;
 using TouristsCore;
 using TouristsCore.DTOS.Tours;
 using TouristsCore.Entities;
@@ -87,7 +88,8 @@ public class TourService : ITourService
 
     public async Task<(IReadOnlyList<TourDto>,int)> GetToursAsync(TourRequestDto request)
     {
-        var qry = _unitOfWork.Context.Set<Tour>().AsQueryable();
+        var qry = _unitOfWork.Context.Set<Tour>().AsQueryable().
+            Where(t=>t.IsPublished==true);
         if (!string.IsNullOrEmpty(request.City))
             qry = qry.Where(t => t.City.Contains(request.City));
         if(request.MinPrice.HasValue)
@@ -189,5 +191,75 @@ public class TourService : ITourService
         await _unitOfWork.CompleteAsync();
         
         return await GetTourByIdAsync(tour.Id);
+    }
+    
+    public async Task<bool> TogglePublishStatusAsync(int tourId, string guideUserId)
+    {
+        if(!Guid.TryParse(guideUserId, out var userid))
+            throw new UnauthorizedAccessException("You do not own this tour.");
+        
+        var tour = await _unitOfWork.Repository<Tour>()
+            .GetByIdAsync(tourId);
+
+        if (tour == null) 
+            throw new KeyNotFoundException($"Tour with ID {tourId} not found.");
+        
+        var guideProfile = await _unitOfWork.Repository<GuideProfile>()
+            .GetEntityByConditionAsync(g => g.UserId == userid);
+
+        if (guideProfile == null || tour.GuideProfileId != guideProfile.Id) 
+            throw new UnauthorizedAccessException("You do not own this tour.");
+
+        tour.IsPublished = !tour.IsPublished;
+
+        await _unitOfWork.CompleteAsync();
+    
+        return tour.IsPublished; 
+    }
+
+    public async Task<(IReadOnlyList<TourDto>,int)> GetMyToursAsync(string guideUserId,PaginationArg arg)
+    {
+        if(!Guid.TryParse(guideUserId, out var userid))
+            throw new UnauthorizedAccessException("You do not own this tour.");
+        
+        var guideProfile = await _unitOfWork.Repository<GuideProfile>()
+            .GetEntityByConditionAsync(g => g.UserId == userid);
+
+        if (guideProfile == null)
+            return (new List<TourDto>(),0);
+
+
+        int count = await _unitOfWork.Context.Set<Tour>()
+            .Where(t => t.GuideProfileId == guideProfile.Id).
+            CountAsync();
+        
+        var tours =   await _unitOfWork.Context.Set<Tour>()
+            .Where(t => t.GuideProfileId == guideProfile.Id)
+            .OrderByDescending(t => t.CreatedAt)
+            .Skip((arg.PageIndex-1)*arg.PageSize)
+            .Take(arg.PageSize)
+            .Select(t => new TourDto
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Description = t.Description,
+                Price = t.Price,
+                DurationMinutes = t.DurationMinutes,
+                City = t.City,
+                IsPublished = t.IsPublished,
+                CreatedAt = t.CreatedAt,
+                UpdateAt = t.UpdatedAt,
+    
+                GuideName = t.GuideProfile.User != null ? t.GuideProfile.User.UserName : null,
+                GuideAvatarUrl = t.GuideProfile.AvatarFile != null ? t.GuideProfile.AvatarFile.FilePath : null,
+                
+                ImageUrls = t.Media
+                    .OrderBy(m => m.OrderIndex)
+                    .Select(m => m.File.FilePath)
+                    .ToList()
+            })
+            .AsNoTracking()
+            .ToListAsync();
+        return (tours, count);
     }
 }
