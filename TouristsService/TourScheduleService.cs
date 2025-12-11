@@ -1,4 +1,6 @@
 using System.Formats.Asn1;
+using Microsoft.EntityFrameworkCore;
+using TouristsAPI.Helpers;
 using TouristsCore;
 using TouristsCore.DTOS.Schedule;
 using TouristsCore.Entities;
@@ -81,6 +83,29 @@ public class TourScheduleService : ITourScheduleService
         _unitOfWork.Repository<TourSchedule>().DeletePermanently(schedule); 
         await _unitOfWork.CompleteAsync();
     }
+
+    public async Task<(IReadOnlyList<ScheduleResponseDto>, int)> GetSchedulesForTourAsync(int tourId, bool isGuide,PaginationArg arg)
+    {
+        var schedules = await _unitOfWork.Context.Set<TourSchedule>()
+            .AsQueryable()
+            .AsNoTracking()
+            .Where(s => isGuide
+                ? true
+                : s.StartTime > DateTime.UtcNow && s.AvailableSeats > 0)
+            .Skip((arg.PageIndex - 1) * arg.PageSize)
+            .Take(arg.PageSize)
+            .Select(s => new ScheduleResponseDto()
+            {
+                Id = s.Id,
+                TourId = s.TourId,
+                StartTime = s.StartTime,
+                AvailableSeats = s.AvailableSeats
+            })
+            .ToListAsync();
+        int count = schedules.Count();
+        return (schedules, count);
+    }
+
     private ScheduleResponseDto MaptoDto(TourSchedule schdule)
     {
         return new ScheduleResponseDto()

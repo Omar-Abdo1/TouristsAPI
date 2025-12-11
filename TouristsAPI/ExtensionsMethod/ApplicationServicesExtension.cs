@@ -38,6 +38,7 @@ public static class ApplicationServicesExtension
         services.AddScoped<IProfileService,ProfileService>();
         services.AddScoped<ITourService,TourService>();
         services.AddScoped<ITourScheduleService,TourScheduleService>();
+        services.AddScoped<IBookingService,BookingService>();
         
         
         #region Validation Error 

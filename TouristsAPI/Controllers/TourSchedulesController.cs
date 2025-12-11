@@ -1,7 +1,9 @@
 using System.Security.Claims;
+using Bogus;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TouristsAPI.ErrorResponses;
+using TouristsAPI.Helpers;
 using TouristsCore.DTOS.Schedule;
 using TouristsCore.Services;
 
@@ -59,6 +61,28 @@ public class TourSchedulesController : ControllerBase
             return Ok(new
             {
                 Message = "Deleted schedule Successfully."
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiErrorResponse(400, ex.Message));
+        }
+    }
+
+    [HttpGet("tours/{tourId:int}/schedules")]
+    public async Task<IActionResult> GetSchedules(int tourId,[FromQuery]PaginationArg arg)
+    {
+        var isGuide = User.IsInRole("Guide") | User.IsInRole("Admin");
+    
+        try
+        {
+            var (result,count) = await _tourScheduleService.GetSchedulesForTourAsync(tourId, isGuide,arg);
+            return Ok(new Pagination<ScheduleResponseDto>()
+            {
+              Count = count,
+              Data = result,
+              PageIndex = arg.PageIndex,
+              PageSize = arg.PageSize
             });
         }
         catch (Exception ex)
