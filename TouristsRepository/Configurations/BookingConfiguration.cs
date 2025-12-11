@@ -17,13 +17,7 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
             .HasForeignKey(b => b.TouristId)
             .OnDelete(DeleteBehavior.Restrict); 
 
-        // Guide -> Booking
-        // Rule:  You cannot delete a Guide if they have bookings.
-        builder.HasOne(b => b.Guide) 
-            .WithMany()
-            .HasForeignKey(b => b.GuideId)
-            .OnDelete(DeleteBehavior.Restrict);
-
+        
         // Tour -> Booking
         // Rule: You cannot delete a Tour if it has active bookings.
         builder.HasOne(b => b.Tour)

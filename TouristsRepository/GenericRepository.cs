@@ -32,6 +32,9 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
         entity.DeletedAt = DateTime.UtcNow;
         Update(entity);
     }
+    public void DeletePermanently(T entity) => _context.Set<T>().Remove(entity);
+    public void DeletePermanentlyRange(IEnumerable<T> entites) => _context.Set<T>().RemoveRange(entites);
+    
     
     public async Task<T?> GetEntityByConditionAsync(Expression<Func<T, bool>> expression, bool asNoTracking = false, params Expression<Func<T, object>>[] includes)
     {

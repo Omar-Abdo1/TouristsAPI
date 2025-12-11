@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using TouristsCore.Enums;
 
 namespace TouristsCore.Entities;
@@ -20,8 +21,9 @@ public class Booking : BaseEntity
 
     public decimal TotalPrice { get; set; }
     public BookingStatus Status { get; set; } // Pending / Paid / Confirmed / Cancelled
-    public int GuideId { get; set; }
-    public GuideProfile Guide { get; set; }
-
+    
+    [Timestamp]
+    public byte[] RowVersion { get; set; } // for concurrency when booking
+    
     public Payment Payment { get; set; }
 }
