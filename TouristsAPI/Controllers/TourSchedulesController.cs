@@ -72,7 +72,7 @@ public class TourSchedulesController : ControllerBase
     [HttpGet("tours/{tourId:int}/schedules")]
     public async Task<IActionResult> GetSchedules(int tourId,[FromQuery]PaginationArg arg)
     {
-        var isGuide = User.IsInRole("Guide") | User.IsInRole("Admin");
+        var isGuide = User.IsInRole("Guide") || User.IsInRole("Admin");
     
         try
         {

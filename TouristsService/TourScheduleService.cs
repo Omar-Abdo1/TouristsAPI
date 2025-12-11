@@ -86,12 +86,17 @@ public class TourScheduleService : ITourScheduleService
 
     public async Task<(IReadOnlyList<ScheduleResponseDto>, int)> GetSchedulesForTourAsync(int tourId, bool isGuide,PaginationArg arg)
     {
-        var schedules = await _unitOfWork.Context.Set<TourSchedule>()
+        var query = _unitOfWork.Context.Set<TourSchedule>()
             .AsQueryable()
             .AsNoTracking()
-            .Where(s => isGuide
-                ? true
-                : s.StartTime > DateTime.UtcNow && s.AvailableSeats > 0)
+            .Where(s => s.TourId == tourId); 
+
+        if (!isGuide)
+            query = query.Where(s => s.StartTime > DateTime.UtcNow && s.AvailableSeats > 0);
+        
+        int totalCount = await query.CountAsync();
+
+        var schedules = await query
             .Skip((arg.PageIndex - 1) * arg.PageSize)
             .Take(arg.PageSize)
             .Select(s => new ScheduleResponseDto()
@@ -102,8 +107,8 @@ public class TourScheduleService : ITourScheduleService
                 AvailableSeats = s.AvailableSeats
             })
             .ToListAsync();
-        int count = schedules.Count();
-        return (schedules, count);
+
+        return (schedules, totalCount);
     }
 
     private ScheduleResponseDto MaptoDto(TourSchedule schdule)
