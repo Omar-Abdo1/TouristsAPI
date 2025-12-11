@@ -90,6 +90,19 @@ public class TourSchedulesController : ControllerBase
             return BadRequest(new ApiErrorResponse(400, ex.Message));
         }
     }
+    [HttpGet("schedules/{id:int}")]
+    public async Task<IActionResult> GetScheduleById(int id)
+    {
+        try
+        {
+            var result = await _tourScheduleService.GetScheduleByIdAsync(id);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return NotFound(new ApiErrorResponse(404, ex.Message));
+        }
+    }
 
 
 }

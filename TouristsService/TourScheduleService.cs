@@ -110,7 +110,18 @@ public class TourScheduleService : ITourScheduleService
 
         return (schedules, totalCount);
     }
+     
+    public async Task<ScheduleResponseDto> GetScheduleByIdAsync(int scheduleId)
+    {
+        var schedule = await _unitOfWork.Repository<TourSchedule>()
+            .GetByIdAsync(scheduleId);
 
+        if (schedule == null)
+            throw new Exception($"Schedule with id {scheduleId} not found");
+
+        return MaptoDto(schedule);
+    } 
+    
     private ScheduleResponseDto MaptoDto(TourSchedule schdule)
     {
         return new ScheduleResponseDto()

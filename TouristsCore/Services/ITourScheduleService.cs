@@ -10,4 +10,7 @@ public interface ITourScheduleService
     Task DeleteScheduleAsync(int scheduleId, Guid userId);
     
     Task<(IReadOnlyList<ScheduleResponseDto>,int)>GetSchedulesForTourAsync(int tourId,bool isGuide,PaginationArg arg);
+
+    Task<ScheduleResponseDto> GetScheduleByIdAsync(int scheduleId);
+    
 }
