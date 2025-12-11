@@ -73,7 +73,7 @@ public class TourScheduleService : ITourScheduleService
             throw new Exception($"schedule With {scheduleId}  not found");
         if(schedule.Tour.GuideProfile.UserId!= userId)
             throw new Exception("You are not authorized to update schedules to this tour.");
-        if (schedule.Bookings.Any())
+        if (schedule.Bookings.Any(b=>b.Status!=BookingStatus.Cancelled))
         {
             throw new Exception("Cannot delete this schedule because tourists have already booked tickets. Please cancel their bookings first.");
         }
