@@ -10,7 +10,7 @@ namespace TouristsService;
 public class BookingService : IBookingService
 {
     private readonly IUnitOfWork _unitOfWork;
-
+    private const int MaxRetries = 5;
     public BookingService(IUnitOfWork  unitOfWork)
     {
         _unitOfWork = unitOfWork;
@@ -18,7 +18,7 @@ public class BookingService : IBookingService
     
     public async Task<BookingResponseDto> CreateBookingAsync(CreateBookingDto dto, Guid userId)
     {
-        int maxRetries = 5;
+        int maxRetries = MaxRetries;
         int currentRetry = 0;
         while (currentRetry < maxRetries)
         {
@@ -75,6 +75,49 @@ public class BookingService : IBookingService
                 await Task.Delay(50 * currentRetry); 
             }
         }
-        throw new Exception("High demand! The seats were taken while you were booking. Please try again.");
+        throw new Exception("High demand! Someone else booked these seats first. Please try again.");
+    }
+
+    
+
+    public async Task CancelBookingAsync(int bookingId, Guid userId)
+    {
+        int maxRetries = MaxRetries;
+        int currentRetry = 0;
+        while (currentRetry < maxRetries)
+        {
+            try
+            {
+                var booking = await _unitOfWork.Repository<Booking>().GetByIdAsync(bookingId, false,b=>b.TourSchedule);
+                
+                if (booking == null)
+                    throw new Exception("Booking not found.");
+                var touristProfile = await _unitOfWork.Repository<TouristProfile>()
+                    .GetEntityByConditionAsync(t => t.UserId == userId,true);
+                if (booking.TouristId != touristProfile.Id)
+                    throw new Exception("You are not authorized to cancel this booking.");
+                if (booking.Status == BookingStatus.Cancelled)
+                    throw new Exception("This booking is already cancelled.");
+
+                if (booking.TourSchedule.StartTime < DateTime.UtcNow.AddHours(24)) // business Logic 
+                throw new Exception("Cannot cancel within 24 hours of the tour.");
+
+                booking.Status = BookingStatus.Cancelled;
+                booking.TourSchedule.AvailableSeats += booking.TicketCount;
+                
+                _unitOfWork.Repository<TourSchedule>().Update(booking.TourSchedule);
+                _unitOfWork.Repository<Booking>().Update(booking);
+
+                await _unitOfWork.CompleteAsync();
+                return;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                currentRetry++;
+                _unitOfWork.Context.ChangeTracker.Clear();
+                await Task.Delay(50 * currentRetry);
+            }
+        }
+        throw new Exception("System is busy. Please try cancelling again.");
     }
 }

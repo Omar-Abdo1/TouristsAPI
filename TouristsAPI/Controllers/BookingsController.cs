@@ -34,4 +34,21 @@ public class BookingsController : ControllerBase
             return BadRequest(new ApiErrorResponse(400, ex.Message));
         }
     }
+
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Tourist")]
+    public async Task<IActionResult> CancelBooking(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        try
+        {
+            await _bookingService.CancelBookingAsync(id, Guid.Parse(userId));
+            return Ok(new { Message = "Booking cancelled successfully. Seats have been returned." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiErrorResponse(400, ex.Message));
+        }
+    }
 }
