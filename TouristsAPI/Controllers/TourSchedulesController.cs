@@ -16,7 +16,7 @@ public class TourSchedulesController : ControllerBase
     {
         _tourScheduleService = tourScheduleService;
     }
-    [HttpPost("tours/{tourId:int/schedules")]
+    [HttpPost("tours/{tourId:int}/schedules")]
     [Authorize(Roles = "Guide")]
     public async Task<IActionResult> CreateSchedule(int tourId, [FromBody] CreateScheduleDto dto)
     {
@@ -52,10 +52,10 @@ public class TourSchedulesController : ControllerBase
     [Authorize(Roles = "Guide")]
     public async Task<IActionResult> DeleteSchedule(int id)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         try
         {
-            var result = _tourScheduleService.DeleteScheduleAsync(id, Guid.Parse(userId));
+             await _tourScheduleService.DeleteScheduleAsync(id, Guid.Parse(userId));
             return Ok(new
             {
                 Message = "Deleted schedule Successfully."

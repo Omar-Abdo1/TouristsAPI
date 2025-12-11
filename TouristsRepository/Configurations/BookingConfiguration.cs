@@ -8,7 +8,7 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
 {
     public void Configure(EntityTypeBuilder<Booking> builder)
     {
-        builder.Property(b => b.TotalPrice).HasPrecision(18, 2);
+        builder.Property(b => b.PriceAtBooking).HasPrecision(18, 2);
         
         // Tourist -> Booking
         // Rule:  You cannot delete a User if they have bookings. (Keeps History)

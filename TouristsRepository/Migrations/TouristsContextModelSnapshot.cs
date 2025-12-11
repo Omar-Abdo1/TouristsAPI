@@ -161,6 +161,9 @@ namespace TouristsRepository.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("BookingDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -170,11 +173,12 @@ namespace TouristsRepository.Migrations
                     b.Property<DateTime>("EndAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("GuideId")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<decimal>("PriceAtBooking")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("StartAt")
                         .HasColumnType("datetime2");
@@ -185,10 +189,6 @@ namespace TouristsRepository.Migrations
 
                     b.Property<int>("TicketCount")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("TotalPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("TourId")
                         .HasColumnType("int");
@@ -205,8 +205,6 @@ namespace TouristsRepository.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedAt");
-
-                    b.HasIndex("GuideId");
 
                     b.HasIndex("TourId");
 
@@ -769,6 +767,12 @@ namespace TouristsRepository.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime2");
 
@@ -1007,12 +1011,6 @@ namespace TouristsRepository.Migrations
 
             modelBuilder.Entity("TouristsCore.Entities.Booking", b =>
                 {
-                    b.HasOne("TouristsCore.Entities.GuideProfile", "Guide")
-                        .WithMany()
-                        .HasForeignKey("GuideId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("TouristsCore.Entities.Tour", "Tour")
                         .WithMany("Bookings")
                         .HasForeignKey("TourId")
@@ -1028,8 +1026,6 @@ namespace TouristsRepository.Migrations
                         .HasForeignKey("TouristId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Guide");
 
                     b.Navigation("Tour");
 

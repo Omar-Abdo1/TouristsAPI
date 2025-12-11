@@ -16,8 +16,8 @@ public class Tour : BaseEntity
     
     
     // Navigation
-    public ICollection<Booking> Bookings { get; set; }
-    public ICollection<TourMedia>  Media { get; set; }
+    public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+    public ICollection<TourMedia>  Media { get; set; } =  new List<TourMedia>();
     public ICollection<TourSchedule> Schedules { get; set; } = new List<TourSchedule>();
     public ICollection<Review>  Reviews { get; set; } = new List<Review>();
 }

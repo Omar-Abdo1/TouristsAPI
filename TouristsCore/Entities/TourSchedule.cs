@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace TouristsCore.Entities;
 
 public class TourSchedule : BaseEntity
@@ -9,5 +11,8 @@ public class TourSchedule : BaseEntity
     
     public int AvailableSeats { get; set; }
     
-    public ICollection<Booking> Bookings { get; set; }
+    [Timestamp]
+    public byte[] RowVersion { get; set; } // for concurrency when booking
+    
+    public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }
