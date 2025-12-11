@@ -1,4 +1,6 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using TouristsAPI.Helpers;
 using TouristsCore;
 using TouristsCore.DTOS.Booking;
 using TouristsCore.Entities;
@@ -119,5 +121,109 @@ public class BookingService : IBookingService
             }
         }
         throw new Exception("System is busy. Please try cancelling again.");
+    }
+
+    public async Task<(IReadOnlyList<BookingTouristDto>, int)> GetBookingsForUserAsync(Guid userId, PaginationArg arg)
+    {
+        var tourist = await _unitOfWork.Repository<TouristProfile>().GetEntityByConditionAsync(
+            t => t.UserId == userId, true);
+        if (tourist == null) throw new Exception("Tourist profile not found");
+
+        var query = _unitOfWork.Context.Set<Booking>()
+            .AsQueryable()
+            .AsNoTracking()
+            .Where(b => b.TouristId == tourist.Id);
+        
+        int count = await query.CountAsync();
+
+        var bookings = await 
+            query.OrderByDescending(b => b.BookingDate)
+                .Skip((arg.PageIndex - 1) * arg.PageSize)
+                .Take(arg.PageSize)
+                .Select(b => new BookingTouristDto()
+                {
+                    
+                    Id = b.Id,
+                    TicketCount = b.TicketCount,
+                    Price = b.PriceAtBooking,
+                    Status = b.Status.ToString(),
+                    BookingDate = b.BookingDate,
+                    
+                    TourName = b.Tour.Title,
+                    City = b.Tour.City,
+                    TourDate = b.TourSchedule.StartTime
+                })
+                .ToListAsync();
+        return (bookings, count);
+    }
+
+    public async Task<(IReadOnlyList<GuideSalesDto>, int)> GetSalesForTourAsync(int tourId, Guid userId, PaginationArg arg)
+    {
+        var tour = await _unitOfWork.Repository<Tour>()
+            .GetByIdAsync(tourId, true, t => t.GuideProfile);
+        if (tour == null) 
+            throw new Exception($"Tour with id = {tourId} not found");
+        
+        if(tour.GuideProfile.UserId!=userId)
+            throw new Exception("Unauthorized. You do not own this tour.");
+
+        var query = _unitOfWork.Context.Set<Booking>()
+            .AsQueryable().AsNoTracking()
+            .Where(b => b.TourId == tour.Id);
+
+        int count = await query.CountAsync();
+         
+        var sales = await query
+            .OrderByDescending(b => b.BookingDate)
+            .Skip((arg.PageIndex - 1) * arg.PageSize)
+            .Take(arg.PageSize)
+            .Select(b => new GuideSalesDto()
+            {
+                BookingId = b.Id,
+                TouristName = b.Tourist.FullName!=null ?  b.Tourist.FullName : "UnKnown",
+                BookingDate = b.BookingDate,
+                TourDate = b.TourSchedule.StartTime,
+                TicketCount = b.TicketCount,
+                TotalRevenue = b.PriceAtBooking,
+                Status = b.Status.ToString()
+            })
+            .ToListAsync();
+        return (sales, count);
+    }
+
+    public async Task<BookingDetailDto> GetBookingByIdAsync(int bookingId, Guid userId)
+    {
+        var booking = await _unitOfWork.Repository<Booking>().GetByIdAsync(
+            bookingId, 
+            true, 
+            b => b.Tour.GuideProfile, 
+            b => b.Tourist,
+            b => b.TourSchedule
+        );
+        if(booking == null)
+            throw new Exception($"Booking with id ={bookingId} not found");
+        
+        if(booking.Tour.GuideProfile.UserId != userId && booking.Tourist.UserId != userId)
+            throw new Exception("Unauthorized. You cannot view this ticket.");
+
+        return new BookingDetailDto()
+            {
+                Id = booking.Id,
+                Status = booking.Status.ToString(),
+                BookingDate = booking.BookingDate,
+
+                TicketCount = booking.TicketCount,
+                PricePaid = booking.PriceAtBooking,
+
+                TourId = booking.TourId,
+                TourName = booking.Tour.Title,
+                TourDescription = booking.Tour.Description,
+                City = booking.Tour.City,
+
+                StartTime = booking.TourSchedule.StartTime,
+
+                TouristName = booking.Tourist.FullName != null ? booking.Tourist.FullName : "UnKnown",
+                GuideName = booking.Tour.GuideProfile.FullName != null ? booking.Tour.GuideProfile.FullName : "UnKnown",
+            };
     }
 }

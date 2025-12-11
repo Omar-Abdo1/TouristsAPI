@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TouristsAPI.ErrorResponses;
+using TouristsAPI.Helpers;
 using TouristsCore.DTOS.Booking;
 using TouristsCore.Services;
 
@@ -51,4 +52,71 @@ public class BookingsController : ControllerBase
             return BadRequest(new ApiErrorResponse(400, ex.Message));
         }
     }
+
+    [HttpGet("my-bookings")]
+    [Authorize(Roles = "Tourist")]
+    public async Task<IActionResult> GetMyBookings([FromQuery] PaginationArg arg)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        try
+        {
+            var (result, count) = await _bookingService.GetBookingsForUserAsync(Guid.Parse(userId), arg);
+        
+            return Ok(new Pagination<BookingTouristDto>
+            {
+                Count = count,
+                Data = result,
+                PageIndex = arg.PageIndex,
+                PageSize = arg.PageSize
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiErrorResponse(400, ex.Message));
+        }
+    }
+    
+    [HttpGet("sales/{tourId:int}")]
+    [Authorize(Roles = "Guide")]
+    public async Task<IActionResult> GetTourSales(int tourId, [FromQuery] PaginationArg arg)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        try
+        {
+            var (result, count) = await _bookingService.GetSalesForTourAsync(tourId, Guid.Parse(userId), arg);
+        
+            return Ok(new Pagination<GuideSalesDto>
+            {
+                Count = count,
+                Data = result,
+                PageIndex = arg.PageIndex,
+                PageSize = arg.PageSize
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiErrorResponse(400, ex.Message));
+        }
+    }
+    
+    [HttpGet("{id:int}")]
+    [Authorize] 
+    public async Task<IActionResult> GetBookingById(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        try
+        {
+            var result = await _bookingService.GetBookingByIdAsync(id, Guid.Parse(userId));
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiErrorResponse(400, ex.Message));
+        }
+    }
+    
+    
 }
