@@ -1,3 +1,4 @@
+using Hangfire;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TouristsAPI.ExtensionsMethod;
@@ -42,6 +43,26 @@ public class Program
             });
         });
         
+        builder.Services.AddHangfire(config => config
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(builder.
+                Configuration.GetConnectionString("DefaultConnection")));
+        /*
+         *"This configures Hangfire to store jobs in SQL Server so they persist after restarts.
+         * The Serializer settings ensure that my C# objects are converted to JSON and back correctly,
+         * even if I update my application version."
+         */
+
+        builder.Services.AddHangfireServer();  
+        
+        builder.Services.Configure<EmailSettings>(
+            builder.Configuration.GetSection("EmailSettings")
+        ); // go get the values from app settings.json
+        
+        
+        
         var app = builder.Build();
         await app.UpdateDatabaseAsync();
 
@@ -62,6 +83,8 @@ public class Program
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
+        
+        app.UseHangfireDashboard("/hangfire");
         
         await app.RunAsync();
     }
