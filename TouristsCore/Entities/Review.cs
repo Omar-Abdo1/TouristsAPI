@@ -6,7 +6,6 @@ namespace TouristsCore.Entities;
 [Index(nameof(BookingId), IsUnique = true)] // 1 review per 1 booking
 public class Review : BaseEntity
 {
-
     public int BookingId { get; set; }
     public Booking Booking { get; set; }
     
