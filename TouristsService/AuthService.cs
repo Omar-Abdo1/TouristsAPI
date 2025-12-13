@@ -75,6 +75,10 @@ public class AuthService : IAuthService
         //check if Google user is already logged in before with GoogleId
         // Step A
         var user = await _userManager.FindByLoginAsync("Google",payload.Subject);
+        
+        if(user!=null && !user.IsActive)
+            return new AuthResponseDto() { Message = "Account is Disabled" };
+            
 
         if (user != null)
         {

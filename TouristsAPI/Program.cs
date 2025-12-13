@@ -62,6 +62,7 @@ public class Program
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
+        
         await app.RunAsync();
     }
 }
