@@ -41,6 +41,7 @@ public static class ApplicationServicesExtension
         services.AddScoped<IBookingService,BookingService>();
         services.AddScoped<IReviewService,ReviewService>();
         services.AddScoped<IAdminService,AdminService>();
+        services.AddScoped<IEmailService,EmailService>();
         
         
         #region Validation Error 
