@@ -11,9 +11,6 @@ public class Review : BaseEntity
     
     public int TourId { get; set; } 
     public Tour Tour { get; set; }
-
-    public int GuideId { get; set; } 
-    public GuideProfile Guide { get; set; } 
     
     public int TouristId { get; set; }
     public TouristProfile Tourist { get; set; }

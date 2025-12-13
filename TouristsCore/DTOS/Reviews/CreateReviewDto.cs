@@ -5,7 +5,7 @@ namespace TouristsCore.DTOS.Reviews;
 public class CreateReviewDto
 {
     [Required]
-    public int TourId { get; set; }
+    public int BookingId { get; set; }
     [Required,Range(1,5)]
     public int Rating { get; set; }
     [MaxLength(500)]

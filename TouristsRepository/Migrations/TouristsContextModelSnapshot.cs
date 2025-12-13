@@ -603,9 +603,6 @@ namespace TouristsRepository.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("GuideId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("GuideProfileId")
                         .HasColumnType("int");
 
@@ -630,8 +627,6 @@ namespace TouristsRepository.Migrations
                         .IsUnique();
 
                     b.HasIndex("CreatedAt");
-
-                    b.HasIndex("GuideId");
 
                     b.HasIndex("GuideProfileId");
 
@@ -1170,12 +1165,6 @@ namespace TouristsRepository.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("TouristsCore.Entities.GuideProfile", "Guide")
-                        .WithMany()
-                        .HasForeignKey("GuideId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("TouristsCore.Entities.GuideProfile", null)
                         .WithMany("Reviews")
                         .HasForeignKey("GuideProfileId");
@@ -1193,8 +1182,6 @@ namespace TouristsRepository.Migrations
                         .IsRequired();
 
                     b.Navigation("Booking");
-
-                    b.Navigation("Guide");
 
                     b.Navigation("Tour");
 
