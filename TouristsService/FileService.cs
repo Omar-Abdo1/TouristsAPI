@@ -12,6 +12,9 @@ public class FileService : IFileService
     private readonly TouristsContext _touristsContext;
     private readonly IWebHostEnvironment _hostingEnvironment;
     private readonly IUnitOfWork _unitOfWork;
+    private const int maxVideoSize = 50 * 1024 * 104;
+    private const int maxImageSize = 5 * 1024 * 104;
+    
 
     private readonly string[] allowedExtensions = { ".jpg", ".jpeg", ".png", ".mp4", ".mov" };
     
@@ -28,6 +31,7 @@ public class FileService : IFileService
         if(file==null || file.Length==0)
             throw new ArgumentException("file is null or empty");
         
+        
         folderName = folderName.Trim().ToLower();
         
         var extension = Path.GetExtension(file.FileName).Trim().ToLower();
@@ -37,6 +41,13 @@ public class FileService : IFileService
             string allowedlist = string.Join(",", allowedExtensions);
             throw new ArgumentException($"File type '{extension}' is not allowed. Allowed extensions are: {allowedlist} ");
         }     
+        
+        if(file.ContentType.StartsWith("video") && file.Length>maxVideoSize)
+            throw new ArgumentException($"Video is too large! Max size is {maxVideoSize / (1024 * 1024) } MB.Please compress it first.");
+        
+        if (file.ContentType.StartsWith("image") && file.Length > maxImageSize)
+            throw new ArgumentException($"Image is too large! Max size is {maxImageSize / (1024 * 1024) } MB.");
+        
         
         string uploadFoler = Path.Combine(_hostingEnvironment.WebRootPath, "uploads", folderName); // from home in linux or /C on windows ... ~/wwwroot/upload/foldername
 
