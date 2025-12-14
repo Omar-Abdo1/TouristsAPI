@@ -4,6 +4,7 @@ using Hangfire;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using TouristsCore.DTOS.Accounts;
 using TouristsCore.Entities;
 using TouristsCore.Services;
@@ -19,9 +20,10 @@ public class AuthService : IAuthService
     private readonly ITokenService _tokenService;
     private readonly IEmailService _emailService;
     private readonly IBackgroundJobClient _jobClient;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(UserManager<User> userManager,IConfiguration  configuration,TouristsContext  touristsContext,
-        ITokenService tokenService,IEmailService  emailService,IBackgroundJobClient jobClient)
+        ITokenService tokenService,IEmailService  emailService,IBackgroundJobClient jobClient,ILogger<AuthService>  logger)
     {
         _userManager = userManager;
         _configuration = configuration;
@@ -29,6 +31,7 @@ public class AuthService : IAuthService
         _tokenService = tokenService;
         _emailService = emailService;
         _jobClient = jobClient;
+        _logger = logger;
     }
     
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto model)
@@ -70,9 +73,9 @@ public class AuthService : IAuthService
             </div>";
             _jobClient.Enqueue(()=> _emailService.SendEmailAsync(user.Email, subject, body));
         }
-        catch 
+        catch(Exception ex) 
         {
-            //todo Log error silently, but allow registration to succeed
+            _logger.LogError(ex,$"Failed to Send Email for {user.Email}");
         }
         
         

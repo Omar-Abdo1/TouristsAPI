@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using TouristsCore;
 using TouristsCore.Entities;
 using TouristsCore.Enums;
@@ -20,12 +21,14 @@ public class JobService : IJobService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IWebHostEnvironment _env;
     private readonly IEmailService _emailService;
+    private readonly ILogger<JobService> _logger;
 
-    public JobService(IUnitOfWork unitOfWork,IWebHostEnvironment env,IEmailService emailService)
+    public JobService(IUnitOfWork unitOfWork,IWebHostEnvironment env,IEmailService emailService,ILogger<JobService>  logger)
     {
         _unitOfWork = unitOfWork;
         _env = env;
         _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task AutoCancelUnpaidBookings()
@@ -39,7 +42,7 @@ public class JobService : IJobService
 
         if (!staleBookings.Any())
         {
-            Console.WriteLine("No bookings found");
+            _logger.LogInformation("No booking in the database");
             return; 
         }
         
@@ -56,8 +59,7 @@ public class JobService : IJobService
         _unitOfWork.Context.UpdateRange(staleBookings);
         await _unitOfWork.CompleteAsync();
         
-        Console.WriteLine($"[Job] Cleaned up {staleBookings.Count} unpaid bookings.");
-        //todo log in good logging
+        _logger.LogInformation($"[Job] Cleaned up {staleBookings.Count} unpaid bookings.");
     }
 
     public async Task DeleteOldFilesAsync()
@@ -72,7 +74,7 @@ public class JobService : IJobService
 
         if (!oldFiles.Any())
         {
-            Console.WriteLine("No Files found");
+            _logger.LogInformation("No Files found");
             return; 
         }
         
@@ -98,12 +100,12 @@ public class JobService : IJobService
                 if (System.IO.File.Exists(fullPath))
                 {
                     System.IO.File.Delete(fullPath);
-                    Console.WriteLine($"[Job] Deleted physical file: {fullPath}");
+                    _logger.LogInformation($"[Job] Deleted physical file: {fullPath}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Job] Error deleting file {file.FilePath}: {ex.Message}");
+               _logger.LogError(ex,$"[Job] Error deleting file {file.FilePath}: {ex.Message}");
             }
         }
 
@@ -111,7 +113,7 @@ public class JobService : IJobService
         _unitOfWork.Context.Set<FileRecord>().RemoveRange(oldFiles);
         await _unitOfWork.CompleteAsync();
 
-        Console.WriteLine($"[Job] Removed {oldFiles.Count} old file records from DB.");
+       _logger.LogInformation($"[Job] Removed {oldFiles.Count} old file records from DB.");
     }
 
     public async Task SendReviewRemindersAsync()
@@ -134,7 +136,7 @@ public class JobService : IJobService
         
         if (!bookingsToRemind.Any())
         {
-            Console.WriteLine("No bookings found");
+            _logger.LogInformation("No bookings found");
             return;
         }
 
@@ -165,11 +167,11 @@ public class JobService : IJobService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Job] Failed to email booking {booking.Id}: {ex.Message}");
+               _logger.LogError(ex,$"[Job] Failed to email booking {booking.Id}: {ex.Message}");
             }
         }
 
-        Console.WriteLine($"[Job] Sent {bookingsToRemind.Count} review reminders.");
+       _logger.LogInformation($"[Job] Sent {bookingsToRemind.Count} review reminders.");
             
         }
         

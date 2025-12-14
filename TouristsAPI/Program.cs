@@ -1,6 +1,7 @@
 using Hangfire;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using TouristsAPI.ExtensionsMethod;
 using TouristsAPI.MiddleWares;
 using TouristsCore.Entities;
@@ -61,6 +62,10 @@ public class Program
         builder.Services.Configure<EmailSettings>(
             builder.Configuration.GetSection("EmailSettings")
         ); // go get the values from app settings.json
+
+
+        builder.Host.UseSerilog((context, configuration) =>
+            configuration.ReadFrom.Configuration(context.Configuration));
         
         
         
@@ -80,6 +85,8 @@ public class Program
         app.UseStaticFiles();
         
         app.UseStatusCodePagesWithReExecute("/error/{0}");
+
+        app.UseSerilogRequestLogging();
         
         app.UseAuthentication();
         app.UseAuthorization();

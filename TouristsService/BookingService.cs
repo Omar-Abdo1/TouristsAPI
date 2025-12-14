@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using TouristsAPI.Helpers;
 using TouristsCore;
 using TouristsCore.DTOS.Booking;
@@ -15,12 +16,14 @@ public class BookingService : IBookingService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEmailService _emailService;
     private readonly IBackgroundJobClient _jobClient;
+    private readonly ILogger<BookingService> _logger;
     private const int MaxRetries = 5;
-    public BookingService(IUnitOfWork  unitOfWork,IEmailService emailService,IBackgroundJobClient jobClient)
+    public BookingService(IUnitOfWork  unitOfWork,IEmailService emailService,IBackgroundJobClient jobClient,ILogger<BookingService> logger)
     {
         _unitOfWork = unitOfWork;
         _emailService = emailService;
         _jobClient = jobClient;
+        _logger = logger;
     }
     
     public async Task<BookingResponseDto> CreateBookingAsync(CreateBookingDto dto, Guid userId)
@@ -77,10 +80,9 @@ public class BookingService : IBookingService
 
                     _jobClient.Enqueue(()=>_emailService.SendEmailAsync(touristProfile.User.Email, subject, body));
                 }
-                catch (Exception ex)
+                catch(Exception ex) 
                 {
-                    //todo logging errors 
-                    Console.WriteLine($"Failed to send email: {ex.Message}");
+                    _logger.LogError(ex,$"Failed to Send Email for {touristProfile.User.Email}");
                 }
                 
                 

@@ -59,7 +59,6 @@ public class ProfileController : ControllerBase
         }
         catch (Exception ex)
         {
-            //todo Log the error in a real app
             return BadRequest(new ApiErrorResponse(400,ex.Message));
         }
     }
@@ -76,7 +75,6 @@ public class ProfileController : ControllerBase
         }
         catch (Exception ex)
         {
-            //todo Log the error in a real app
             return BadRequest(new ApiErrorResponse(400,ex.Message));
         }
     }

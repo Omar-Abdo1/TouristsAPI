@@ -9,5 +9,4 @@ public class FileRecord : BaseEntity
     public string FilePath { get; set; } // relative/absolute storage path or cloud URL
     public string ContentType { get; set; }
     public long Size { get; set; }
-    // todo make a background job to delete the files from DB after a week from being deleted
 }
