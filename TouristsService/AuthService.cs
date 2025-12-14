@@ -128,7 +128,7 @@ public class AuthService : IAuthService
                 IsActive = true
             };
 
-            var result = await _userManager.CreateAsync(user, Guid.NewGuid().ToString()); // Random Password
+            var result = await _userManager.CreateAsync(user, Guid.NewGuid().ToString()+"Abc@123"); // Random Password
             
             if (!result.Succeeded) 
                 return new AuthResponseDto { Message = "Could not register Google user." };
