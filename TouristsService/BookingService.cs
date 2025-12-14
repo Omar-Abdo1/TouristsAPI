@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using TouristsAPI.Helpers;
 using TouristsCore;
@@ -12,10 +13,14 @@ namespace TouristsService;
 public class BookingService : IBookingService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IEmailService _emailService;
+    private readonly IBackgroundJobClient _jobClient;
     private const int MaxRetries = 5;
-    public BookingService(IUnitOfWork  unitOfWork)
+    public BookingService(IUnitOfWork  unitOfWork,IEmailService emailService,IBackgroundJobClient jobClient)
     {
         _unitOfWork = unitOfWork;
+        _emailService = emailService;
+        _jobClient = jobClient;
     }
     
     public async Task<BookingResponseDto> CreateBookingAsync(CreateBookingDto dto, Guid userId)
@@ -32,7 +37,8 @@ public class BookingService : IBookingService
                     throw new Exception($"Schedule with id = {dto.ScheduleId} not found.");
                 
                 var touristProfile = await _unitOfWork.Repository<TouristProfile>()
-                    .GetEntityByConditionAsync(t => t.UserId == userId);
+                    .GetEntityByConditionAsync(t => t.UserId == userId,false,
+                        t=>t.User);
                 
                 if (touristProfile == null) throw new Exception("Tourist profile not found");
                 
@@ -55,6 +61,28 @@ public class BookingService : IBookingService
                 };
                 _unitOfWork.Repository<Booking>().Add(booking);
                 await _unitOfWork.CompleteAsync(); // If RowVersion changed in DB since we read it, this throws exception
+                
+                
+                try
+                {
+                    
+                        var subject = "Booking Confirmation - Payment Required ⏳";
+                        var body = $@"
+                    <h2>Booking Received!</h2>
+                    <p>Your booking for <strong>{booking.Tour.Title}</strong> is currently <strong>PENDING</strong>.</p>
+                    <p style='color: red;'><strong>Important:</strong> You have 1 hour to complete the payment.</p>
+                    <p>If payment is not received by {DateTime.UtcNow.AddHours(1):HH:mm} UTC, these seats will be automatically released.</p>
+                    <br>
+                    <a href='https://yourapp.com/pay/{booking.Id}'>Click here to Pay Now</a>";
+
+                    _jobClient.Enqueue(()=>_emailService.SendEmailAsync(touristProfile.User.Email, subject, body));
+                }
+                catch (Exception ex)
+                {
+                    //todo logging errors 
+                    Console.WriteLine($"Failed to send email: {ex.Message}");
+                }
+                
                 
                 return new BookingResponseDto
                 {
@@ -90,12 +118,13 @@ public class BookingService : IBookingService
         {
             try
             {
-                var booking = await _unitOfWork.Repository<Booking>().GetByIdAsync(bookingId, false,b=>b.TourSchedule);
+                var booking = await _unitOfWork.Repository<Booking>().GetByIdAsync(bookingId, false,
+                    b=>b.TourSchedule,b=>b.Tour);
                 
                 if (booking == null)
                     throw new Exception("Booking not found.");
                 var touristProfile = await _unitOfWork.Repository<TouristProfile>()
-                    .GetEntityByConditionAsync(t => t.UserId == userId,true);
+                    .GetEntityByConditionAsync(t => t.UserId == userId,true,t=>t.User);
                 if (booking.TouristId != touristProfile.Id)
                     throw new Exception("You are not authorized to cancel this booking.");
                 if (booking.Status == BookingStatus.Cancelled)
@@ -111,6 +140,14 @@ public class BookingService : IBookingService
                 _unitOfWork.Repository<Booking>().Update(booking);
 
                 await _unitOfWork.CompleteAsync();
+                
+                _jobClient.Enqueue(() => _emailService.SendEmailAsync(
+                    touristProfile.User.Email, 
+                    "Booking Cancelled", 
+                    $"Your booking for {booking.Tour.Title} has been cancelled successfully."
+                ));
+                
+                
                 return;
             }
             catch (DbUpdateConcurrencyException)

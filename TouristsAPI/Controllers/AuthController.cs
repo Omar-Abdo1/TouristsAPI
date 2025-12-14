@@ -78,33 +78,32 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Token revoked successfully" });
     }
 
-    [HttpPost("forget-password")]
-    public async Task<ActionResult<string>> ForgotPassword(ForgotPasswordDto model)
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
-        var user = await _userManager.FindByEmailAsync(model.Email);
-        if(user == null)
-            return NotFound(new ApiErrorResponse(404,"User not found"));
-        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        //todo will send email 
-        return Ok(token);
+        try
+        {
+            await _authService.ForgotPasswordAsync(dto.Email);
+            return Ok(new { Message = "If that email exists, a reset link has been sent." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiErrorResponse(400, ex.Message));
+        }
     }
 
     [HttpPost("reset-password")]
-    public async Task<IActionResult> ResetPassword(ResetPasswordDto model)
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
     {
-        var user = await _userManager.FindByEmailAsync(model.Email);
-        if(user == null)
-            return NotFound(new ApiErrorResponse(404,"User not found"));
-        var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword); // check if the token is valid for this user 
-        if(!result.Succeeded)
-        return BadRequest(result.Errors);
-        return Ok(new
+        try
         {
-          Displayname = user.UserName,
-          Email = user.Email,
-          Token = new JwtSecurityTokenHandler().
-              WriteToken(await _tokenService.CreateTokenAsync(user,_userManager)),
-        });
+            await _authService.ResetPasswordAsync(dto);
+            return Ok(new { Message = "Password has been reset successfully. You can now login." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiErrorResponse(400, ex.Message));
+        }
     }
     
     public class TokenRequestDto

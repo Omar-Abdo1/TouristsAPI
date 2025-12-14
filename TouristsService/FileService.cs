@@ -81,9 +81,6 @@ public class FileService : IFileService
         
         await _unitOfWork.CompleteAsync();
         
-        // TODO: Implement this in Phase 4 (Background Jobs) 
-        // todo here must invoke the background job that delete physically from server 
-        
         return true;
     }
 }

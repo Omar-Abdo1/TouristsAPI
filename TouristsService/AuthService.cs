@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using Google.Apis.Auth;
+using Hangfire;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -16,13 +17,18 @@ public class AuthService : IAuthService
     private readonly IConfiguration _configuration;
     private readonly TouristsContext _touristsContext;
     private readonly ITokenService _tokenService;
+    private readonly IEmailService _emailService;
+    private readonly IBackgroundJobClient _jobClient;
 
-    public AuthService(UserManager<User> userManager,IConfiguration  configuration,TouristsContext  touristsContext,ITokenService tokenService)
+    public AuthService(UserManager<User> userManager,IConfiguration  configuration,TouristsContext  touristsContext,
+        ITokenService tokenService,IEmailService  emailService,IBackgroundJobClient jobClient)
     {
         _userManager = userManager;
         _configuration = configuration;
         _touristsContext = touristsContext;
         _tokenService = tokenService;
+        _emailService = emailService;
+        _jobClient = jobClient;
     }
     
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto model)
@@ -50,6 +56,26 @@ public class AuthService : IAuthService
             await _touristsContext.TouristProfiles.AddAsync(new TouristProfile() {UserId = user.Id , FullName = model.Username});
         }
         await _touristsContext.SaveChangesAsync();
+        
+        try 
+        {
+            var subject = "Welcome to TourApp! 🌍";
+            var body = $@"
+            <div style='font-family: Arial, sans-serif; padding: 20px;'>
+                <h2 style='color: #2c3e50;'>Welcome, {model.Username}!</h2>
+                <p>We are thrilled to have you on board.</p>
+                <p>You can now log in and start booking your next adventure.</p>
+                <br>
+                <p>Best Regards,<br>The TourApp Team</p>
+            </div>";
+            _jobClient.Enqueue(()=> _emailService.SendEmailAsync(user.Email, subject, body));
+        }
+        catch 
+        {
+            //todo Log error silently, but allow registration to succeed
+        }
+        
+        
         return await CreateAuthResponse(user);
     }
     
@@ -165,6 +191,39 @@ public class AuthService : IAuthService
         await _touristsContext.SaveChangesAsync();
         return true;
     }
+    
+    public async Task ForgotPasswordAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null) 
+            throw new Exception("If that email exists, we have sent a reset link."); // Security: Don't reveal if user exists
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        
+        var body = $@"
+            <h1>Reset Your Password</h1>
+            <p>You requested a password reset. Use the token below:</p>
+            <p><strong>{token}</strong></p>
+            <p>If you did not request this, ignore this email.</p>";
+
+        _jobClient.Enqueue(()=>_emailService.SendEmailAsync(user.Email, "Reset Password Request", body));
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordDto model)
+    {
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null) throw new Exception("Invalid request.");
+
+        var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            throw new Exception(errors);
+        }
+    }
+    
+    
     private async Task<AuthResponseDto> CreateAuthResponse(User user)
     {
         var jwtToken = await _tokenService.CreateTokenAsync(user,_userManager);
