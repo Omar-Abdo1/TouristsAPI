@@ -18,6 +18,11 @@ public static class AddingBackGroundJobs
             );
             
             recurringJobManager.AddOrUpdate<IJobService>(
+                "cancel-expired-payments",
+                job=>job.AutoCancelUnpaidBookings(),
+                Cron.Daily(2));
+            
+            recurringJobManager.AddOrUpdate<IJobService>(
                 "cleanup-old-files",job=>job.
                     DeleteOldFilesAsync(),
                 Cron.Daily);
