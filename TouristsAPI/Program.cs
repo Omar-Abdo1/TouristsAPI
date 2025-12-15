@@ -2,6 +2,7 @@ using Hangfire;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Stripe;
 using TouristsAPI.ExtensionsMethod;
 using TouristsAPI.MiddleWares;
 using TouristsCore.Entities;
@@ -67,7 +68,7 @@ public class Program
         builder.Host.UseSerilog((context, configuration) =>
             configuration.ReadFrom.Configuration(context.Configuration));
         
-        
+        StripeConfiguration.ApiKey = builder.Configuration["StripeSettings:SecretKey"]; // for Stripe ***
         
         var app = builder.Build();
         await app.UpdateDatabaseAsync();
