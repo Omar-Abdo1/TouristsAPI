@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using TouristsCore;
 using TouristsCore.Entities;
 using TouristsCore.Enums;
+using TouristsCore.Enums.Payment;
 using TouristsCore.Services;
 
 namespace TouristsService;
@@ -14,6 +15,8 @@ public interface IJobService
     Task DeleteOldFilesAsync();
 
     Task SendReviewRemindersAsync();
+    
+    Task CancelExpiredPaymentsAsync();
 }
 
 public class JobService : IJobService
@@ -174,6 +177,31 @@ public class JobService : IJobService
        _logger.LogInformation($"[Job] Sent {bookingsToRemind.Count} review reminders.");
             
         }
-        
-    
+
+    public async Task CancelExpiredPaymentsAsync()
+    {
+        var threshold = DateTime.UtcNow.AddHours(-24);
+
+        var expiredPayments = await _unitOfWork.Context.Set<Payment>()
+            .Include(p => p.Booking)
+            .Where(p => p.Status == PaymentStatus.Pending && p.CreatedAt < threshold)
+            .ToListAsync();
+
+        if (!expiredPayments.Any()) return;
+
+        foreach (var payment in expiredPayments)
+        {
+            payment.Status = PaymentStatus.Cancelled;
+            payment.FailureMessage = "System auto-cancelled: Session expired (24h+).";
+            
+            if (payment.Booking != null && payment.Booking.Status == BookingStatus.Pending)
+            {
+                payment.Booking.Status = BookingStatus.Cancelled;
+            }
+        }
+        _unitOfWork.Context.UpdateRange(expiredPayments);
+        await _unitOfWork.CompleteAsync();
+
+        _logger.LogInformation($"[Job] Soft-deleted {expiredPayments.Count} expired payments.");
+    }
 }

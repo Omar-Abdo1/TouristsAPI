@@ -43,6 +43,7 @@ public static class ApplicationServicesExtension
         services.AddScoped<IAdminService,AdminService>();
         services.AddScoped<IEmailService,EmailService>();
         services.AddScoped<IJobService, JobService>();
+        services.AddScoped<PaymentService>();
         
         #region Validation Error 
         services.Configure<ApiBehaviorOptions>(options =>
