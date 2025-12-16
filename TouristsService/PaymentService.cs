@@ -79,16 +79,29 @@ public class PaymentService
       var service = new SessionService();
       var session = await service.CreateAsync(options);
       
-      var payment = new Payment
+      var existingPayment = await _unitOfWork.Repository<Payment>()
+         .GetEntityByConditionAsync(p => p.BookingId == bookingId);
+      if (existingPayment != null)
       {
-         BookingId = booking.Id,
-         Amount = booking.PriceAtBooking, 
-         Status = PaymentStatus.Pending,
-         Provider = "Stripe",
-         TransactionId = session.Id // save it to DB (its temp we will swap it with PaymentIntentId later) 
-      };
-      
-      _unitOfWork.Repository<Payment>().Add(payment);
+         existingPayment.TransactionId = session.Id; 
+         existingPayment.Status = PaymentStatus.Pending;
+         existingPayment.Amount = booking.PriceAtBooking;
+         existingPayment.Provider = "Stripe";
+         _unitOfWork.Repository<Payment>().Update(existingPayment);
+      }
+      else
+      {
+         var payment = new Payment
+         {
+            BookingId = booking.Id,
+            Amount = booking.PriceAtBooking,
+            Status = PaymentStatus.Pending,
+            Provider = "Stripe",
+            TransactionId = session.Id // save it to DB (its temp we will swap it with PaymentIntentId later) 
+         };
+         _unitOfWork.Repository<Payment>().Add(payment);
+      }
+
       await _unitOfWork.CompleteAsync();
       
       return session;
@@ -102,7 +115,8 @@ public class PaymentService
       int bookingId = int.Parse(bookingIdStr);
 
       var payment = await _unitOfWork.Repository<Payment>().GetEntityByConditionAsync(
-         p => p.TransactionId == session.Id, false, p => p.Booking);
+         p => p.TransactionId == session.Id, false, p => p.Booking,
+         p=>p.Booking.Tourist.User);
       
       if (payment == null || payment.Status == PaymentStatus.Succeeded)
       return;

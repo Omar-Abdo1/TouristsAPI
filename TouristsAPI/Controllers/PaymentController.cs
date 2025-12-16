@@ -52,7 +52,8 @@ public class PaymentController : ControllerBase
             var stripeEvent = EventUtility.ConstructEvent(
                 json,
                 Request.Headers["Stripe-Signature"],
-                _config["StripeSettings:WebhookSecret"]
+                _config["StripeSettings:WebhookSecret"],
+                throwOnApiVersionMismatch:false
             ); // compare with  Stripe-Signature as JWT Signature  using -> HMAC 
 
             switch (stripeEvent.Type)
@@ -87,6 +88,9 @@ public class PaymentController : ControllerBase
         catch (StripeException ex)
         {
             _logger.LogError(ex, "Stripe webhook error");
+            Console.WriteLine("--------------------------------------------------");
+            Console.WriteLine("STRIPE ERROR: " + ex.Message);
+            Console.WriteLine("--------------------------------------------------");
             return BadRequest(new ApiErrorResponse(400,ex.Message));
         }
     }

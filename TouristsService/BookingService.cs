@@ -59,7 +59,7 @@ public class BookingService : IBookingService
                     TourId = schedule.TourId,
                     TicketCount = dto.TicketCount,
                     PriceAtBooking = schedule.Tour.Price * dto.TicketCount,
-                    Status = BookingStatus.Confirmed,
+                    Status = BookingStatus.Pending,
                     BookingDate = DateTime.UtcNow
                 };
                 _unitOfWork.Repository<Booking>().Add(booking);
