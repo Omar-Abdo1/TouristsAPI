@@ -191,4 +191,46 @@ public class PaymentService
       _logger.LogWarning("[Webhook] Payment failed for PaymentIntent {IntentId}", intent.Id);
    }
 
+   public async Task<bool> RefundPaymentAsync(int bookingId)
+   {
+      var payment = await _unitOfWork.Repository<Payment>()
+         .GetEntityByConditionAsync(p => p.BookingId == bookingId,false,
+            p=>p.Booking);
+      if (payment == null) 
+         throw new Exception("No payment record found for this booking.");
+      if (payment.Status != PaymentStatus.Succeeded) 
+         throw new Exception("Cannot refund. Payment is not 'Succeeded' (it might be Pending or already Refunded).");
+      
+      if (string.IsNullOrEmpty(payment.TransactionId) || !payment.TransactionId.StartsWith("pi_")) // should be paymentIntentID
+         throw new Exception($"Invalid Transaction ID '{payment.TransactionId}'. Cannot process refund.");
+      try
+      {
+         var refundOptions = new RefundCreateOptions
+         {
+            PaymentIntent = payment.TransactionId,
+            Reason = RefundReasons.RequestedByCustomer
+         };
+        
+         var refundService = new RefundService();
+         var refund = await refundService.CreateAsync(refundOptions);
+
+         payment.Status = PaymentStatus.Refunded;
+         payment.FailureMessage = $"Refunded via Stripe ID: {refund.Id}";
+        
+          if(payment.Booking != null) 
+             payment.Booking.Status = BookingStatus.Cancelled;
+
+         _unitOfWork.Repository<Payment>().Update(payment);
+         await _unitOfWork.CompleteAsync();
+        
+         _logger.LogInformation($"[Refund] Successfully refunded booking {bookingId}");
+         return true;
+      }
+      catch (StripeException ex)
+      {
+         _logger.LogError(ex, "[Refund Error] Stripe refused refund.");
+         throw new Exception($"Stripe Refund Failed: {ex.Message}");
+      }
+   }
+
 }

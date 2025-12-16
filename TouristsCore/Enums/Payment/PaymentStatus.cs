@@ -2,5 +2,5 @@ namespace TouristsCore.Enums.Payment;
 
 public enum PaymentStatus
 {
-    Pending,Succeeded,Failed,Cancelled
+    Pending,Succeeded,Failed,Cancelled,Refunded
 }

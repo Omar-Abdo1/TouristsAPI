@@ -94,4 +94,19 @@ public class PaymentController : ControllerBase
             return BadRequest(new ApiErrorResponse(400,ex.Message));
         }
     }
+    
+    [HttpPost("refund/{bookingId:int}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Refund(int bookingId)
+    {
+        try
+        {
+            await _paymentService.RefundPaymentAsync(bookingId);
+            return Ok(new { Message = "Money returned to customer successfully." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiErrorResponse(400, ex.Message));
+        }
+    }
 }

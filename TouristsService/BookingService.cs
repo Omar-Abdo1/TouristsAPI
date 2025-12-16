@@ -17,13 +17,17 @@ public class BookingService : IBookingService
     private readonly IEmailService _emailService;
     private readonly IBackgroundJobClient _jobClient;
     private readonly ILogger<BookingService> _logger;
+    private readonly PaymentService _paymentService;
     private const int MaxRetries = 5;
-    public BookingService(IUnitOfWork  unitOfWork,IEmailService emailService,IBackgroundJobClient jobClient,ILogger<BookingService> logger)
+    public BookingService(IUnitOfWork  
+        unitOfWork,IEmailService emailService,IBackgroundJobClient jobClient,ILogger<BookingService> logger
+        ,PaymentService paymentService)
     {
         _unitOfWork = unitOfWork;
         _emailService = emailService;
         _jobClient = jobClient;
         _logger = logger;
+        _paymentService = paymentService;
     }
     
     public async Task<BookingResponseDto> CreateBookingAsync(CreateBookingDto dto, Guid userId)
@@ -134,6 +138,20 @@ public class BookingService : IBookingService
 
                 if (booking.TourSchedule.StartTime < DateTime.UtcNow.AddHours(24)) // business Logic 
                 throw new Exception("Cannot cancel within 24 hours of the tour.");
+                
+                if (booking.Status == BookingStatus.Paid || booking.Status == BookingStatus.Confirmed)
+                {
+                    var hoursUntilTrip = (booking.TourSchedule.StartTime - DateTime.UtcNow).TotalHours;
+
+                    if (hoursUntilTrip > 48)
+                    {
+                        await _paymentService.RefundPaymentAsync(bookingId);
+                    }
+                    else
+                    {
+                        throw new Exception("Too late to cancel for a refund.");
+                    }
+                }
 
                 booking.Status = BookingStatus.Cancelled;
                 booking.TourSchedule.AvailableSeats += booking.TicketCount;
