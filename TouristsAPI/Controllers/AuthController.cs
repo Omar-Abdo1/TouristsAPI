@@ -25,6 +25,8 @@ public class AuthController : ControllerBase
         _userManager = userManager;
         _tokenService = tokenService;
     }
+    
+    
 
     [HttpPost("Register")]
     public async Task<IActionResult> RegisterAsync(RegisterDto model)
@@ -32,7 +34,19 @@ public class AuthController : ControllerBase
         var res =await _authService.RegisterAsync(model);
         if (!res.IsAuthenticated)
             return BadRequest(new ApiErrorResponse(400, res.Message));
-        return Ok(res);
+        
+        // SetRefreshTokenInCookie
+        SetRefreshTokenInCookie(res.RefreshToken,res.RefreshTokenExpiration);
+        
+        return Ok(new 
+        {
+            res.IsAuthenticated,
+            res.Token,
+            res.ExpiresOn,
+            res.Username,
+            res.Email,
+            res.Role,
+        });
     }
     
     [HttpPost("Login")]
@@ -41,7 +55,18 @@ public class AuthController : ControllerBase
         var res = await _authService.LoginAsync(model);
         if (!res.IsAuthenticated)
             return BadRequest(new ApiErrorResponse(400, res.Message));
-        return Ok(res);
+        // SetRefreshTokenInCookie
+        SetRefreshTokenInCookie(res.RefreshToken,res.RefreshTokenExpiration);
+        
+        return Ok(new 
+        {
+            res.IsAuthenticated,
+            res.Token,
+            res.ExpiresOn,
+            res.Username,
+            res.Email,
+            res.Role,
+        });
     }
     [HttpPost("Google-Login")]
     public async Task<IActionResult> GoogleLoginAsync(SocialLoginDto model)
@@ -49,34 +74,55 @@ public class AuthController : ControllerBase
         var res = await _authService.LoginWithGoogleAsync(model);
         if (!res.IsAuthenticated)
             return BadRequest(new ApiErrorResponse(400, res.Message));
-        return Ok(res);
+        SetRefreshTokenInCookie(res.RefreshToken, res.RefreshTokenExpiration);
+
+        return Ok(new 
+        {
+            res.IsAuthenticated,
+            res.Token,
+            res.ExpiresOn,
+            res.Username,
+            res.Email,
+            res.Role
+        });
     }
     
     [HttpPost("Refresh-Token")]
-    public async Task<IActionResult> RefreshTokenAsync(TokenRequestDto model)
+    public async Task<IActionResult> RefreshTokenAsync()
     {
-        if (string.IsNullOrEmpty(model.Token))
+        var refreshToken = Request.Cookies["refreshToken"];
+        
+        if (string.IsNullOrEmpty(refreshToken))
             return BadRequest(new ApiErrorResponse(400,"Token Must Sent"));
 
-        var result = await _authService.RefreshTokenAsync(model.Token);
+        var result = await _authService.RefreshTokenAsync(refreshToken);
 
         if (!result.IsAuthenticated)
             return BadRequest(new ApiErrorResponse(400, result.Message));
 
-        return Ok(result);
+        SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
+
+        return Ok(new 
+        { 
+            Token = result.Token, 
+            ExpiresOn = result.ExpiresOn 
+        });
     }
     
     [HttpPost("Revoke-Token")]
-    public async Task<IActionResult> RevokeTokenAsync(TokenRequestDto model)
+    public async Task<IActionResult> RevokeTokenAsync()
     {
-        if (string.IsNullOrEmpty(model.Token))
+        var refreshToken = Request.Cookies["refreshToken"];
+        if (string.IsNullOrEmpty(refreshToken))
             return BadRequest(new ApiErrorResponse(400,"Token Must Sent"));
 
-        var result = await _authService.RevokeTokenAsync(model.Token);
+        var result = await _authService.RevokeTokenAsync(refreshToken);
 
         if (!result)
             return BadRequest(new ApiErrorResponse(400,"Token is invalid or inactive"));
-
+           
+        Response.Cookies.Delete("refreshToken"); 
+        
         return Ok(new { message = "Token revoked successfully" });
     }
 
@@ -111,5 +157,17 @@ public class AuthController : ControllerBase
     public class TokenRequestDto
     {
         public string Token { get; set; }
+    }
+    private void SetRefreshTokenInCookie(string refreshToken, DateTime expires)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,    //JS cannot read this
+            Expires = expires.ToLocalTime(),
+            Secure = true,      // HTTPS only
+            SameSite = SameSiteMode.None // if Front/Back are on different domains
+        };
+
+        Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
     }
 }

@@ -89,7 +89,8 @@ public class Program
                     {
                         PermitLimit = 80,            
                         Window = TimeSpan.FromMinutes(1),
-                        QueueLimit = 2
+                        QueueLimit = 10,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                     });
             });
 
