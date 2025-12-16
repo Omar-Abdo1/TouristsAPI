@@ -81,6 +81,13 @@ public class PaymentController : ControllerBase
                         await _paymentService.HandlePaymentFailedAsync(paymentIntent);
                     }
                     break;
+                  case "charge.refunded": // want to refund
+                    var charge = stripeEvent.Data.Object as Stripe.Charge;
+                    if (charge?.PaymentIntentId != null)
+                    {
+                        await _paymentService.HandleChargeRefundedAsync(charge.PaymentIntentId);
+                    }
+                    break;
             }
 
             return Ok();
