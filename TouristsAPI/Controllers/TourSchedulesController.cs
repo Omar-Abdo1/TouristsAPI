@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Bogus;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using TouristsAPI.ErrorResponses;
 using TouristsAPI.Helpers;
 using TouristsCore.DTOS.Schedule;
@@ -10,6 +11,7 @@ using TouristsCore.Services;
 namespace TouristsAPI.Controllers;
 [ApiController]
 [Route("api")]
+[EnableRateLimiting("Global")]
 public class TourSchedulesController : ControllerBase
 {
     private readonly ITourScheduleService _tourScheduleService;

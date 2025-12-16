@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using TouristsAPI.ErrorResponses;
 using TouristsAPI.Helpers;
 using TouristsCore.DTOS.Tours;
@@ -11,6 +12,7 @@ namespace TouristsAPI.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[EnableRateLimiting("Global")]
 public class TourController : ControllerBase
 {
     private readonly ITourService _tourService;

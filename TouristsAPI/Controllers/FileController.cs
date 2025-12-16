@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.AspNetCore.RateLimiting;
 using TouristsAPI.ErrorResponses;
 using TouristsCore.Entities;
 using TouristsCore.Services;
@@ -11,6 +12,7 @@ namespace TouristsAPI.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
+[EnableRateLimiting("Global")]
 public class FileController : ControllerBase
 {
     private readonly IFileService _fileService;

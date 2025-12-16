@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Stripe;
 using Stripe.Checkout;
 using TouristsAPI.ErrorResponses;
@@ -8,6 +9,7 @@ using TouristsService;
 namespace TouristsAPI.Controllers;
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("Strict")]
 public class PaymentController : ControllerBase
 {
     private readonly PaymentService _paymentService;

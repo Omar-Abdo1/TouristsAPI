@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.RateLimiting;
 using TouristsAPI.ErrorResponses;
 using TouristsCore.DTOS.Accounts;
 using TouristsCore.Services;
@@ -11,6 +12,7 @@ namespace TouristsAPI.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
+[EnableRateLimiting("Global")]
 public class ProfileController : ControllerBase
 {
     private readonly IProfileService _profileService;

@@ -1,3 +1,4 @@
+using System.Threading.RateLimiting;
 using Hangfire;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -70,6 +71,46 @@ public class Program
         
         StripeConfiguration.ApiKey = builder.Configuration["StripeSettings:SecretKey"]; // for Stripe ***
         
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.OnRejected = async (context, token) =>
+            {
+                context.HttpContext.Response.StatusCode = 429;
+                await context.HttpContext.Response.WriteAsJsonAsync(new { Message = "Too many requests" });
+            };
+            
+            options.AddPolicy("Global", context =>
+            {
+                string userId = context.Connection.RemoteIpAddress?.ToString()??"unknown";
+                
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    userId,
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 80,            
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 2
+                    });
+            });
+
+            options.AddPolicy("Strict", context =>
+            {
+                string userId = context.Connection.RemoteIpAddress?.ToString()??"unknown";
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    userId,
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 5,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    });
+            });
+            
+        });
+        
+        
+        
         var app = builder.Build();
         await app.UpdateDatabaseAsync();
 
@@ -84,6 +125,8 @@ public class Program
         
         app.UseCors("My  Policy");
         app.UseStaticFiles();
+
+        app.UseRateLimiter();
         
         app.UseStatusCodePagesWithReExecute("/error/{0}");
 

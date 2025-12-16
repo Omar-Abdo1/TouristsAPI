@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using TouristsAPI.ErrorResponses;
 using TouristsAPI.Helpers;
 using TouristsCore.DTOS.Reviews;
@@ -9,6 +10,7 @@ using TouristsCore.Services;
 namespace TouristsAPI.Controllers;
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("Global")]
 public class ReviewController : ControllerBase
 {
     private readonly IReviewService _reviewService;
