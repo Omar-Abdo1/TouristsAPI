@@ -17,4 +17,5 @@ public class User : IdentityUser<Guid> , ISoftDeletable
         IsDeleted = false;
         DeletedAt = null;
     }
+    public string? PhotoUrl { get; set; }
 }

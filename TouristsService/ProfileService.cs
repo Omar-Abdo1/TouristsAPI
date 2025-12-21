@@ -74,16 +74,28 @@ public class ProfileService : IProfileService
     
     public async Task<bool> ChangeAvatarAsync(Guid userId, int fileId)
     {
+        var file = await _unitOfWork.Repository<FileRecord>().GetByIdAsync(fileId);
+        if (file is null) 
+            return false;
         var guid = await _unitOfWork.Repository<GuideProfile>().GetEntityByConditionAsync(g => g.UserId == userId);
         if (guid != null)
         {
             await HandleAvatarUpdate(guid, fileId);
+            var me = await _unitOfWork.Context.Set<User>().FindAsync(guid.UserId);
+            me.PhotoUrl = file.FilePath;
+            _unitOfWork.Context.Set<User>().Update(me);
+            await _unitOfWork.Context.SaveChangesAsync();
+            
             return true;
         }
         var tourist = await _unitOfWork.Repository<TouristProfile>().GetEntityByConditionAsync(t => t.UserId == userId);
         if (tourist != null)
         {
             await HandleAvatarUpdate(tourist, fileId);
+            var me = await _unitOfWork.Context.Set<User>().FindAsync(tourist.UserId);
+            me.PhotoUrl = file.FilePath;
+            _unitOfWork.Context.Set<User>().Update(me);
+            await _unitOfWork.Context.SaveChangesAsync();
             return true;
         }
         return false;
