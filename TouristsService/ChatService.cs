@@ -82,47 +82,43 @@ public class ChatService : IChatService
 
     public async Task<PagedResult<ChatListDto>> GetUserChatsAsync(Guid userId,DateTime? beforeDate,int pageSize=15)
     {
-        throw new NotImplementedException();
-        // var query = _unitOfWork.Context.Set<Chat>().AsQueryable()
-        //     .AsNoTracking()
-        //     .Include(c => c.LastMessage)
-        //     .Include(c => c.Participants).ThenInclude(p => p.User)
-        //     .Where(c => c.Participants.Any(p => p.UserId == userId) && c.LastMessageId!=null);
-        //
-        // if (beforeDate.HasValue)
-        //     query = query.Where(c=>c.LastMessage.CreatedAt<beforeDate.Value);
-        //
-        // var dtos = await query.OrderByDescending(c => c.LastMessage.CreatedAt)
-        //     .Take(pageSize + 1)
-        //     .Select(c => new ChatListDto
-        //     {
-        //         ChatId = c.Id,
-        //         PartnerId = c.Participants.FirstOrDefault(p=>p.UserId!=userId).UserId,
-        //         PartnerName = c.Participants.FirstOrDefault(p=>p.UserId!=userId).User.UserName ,
-        //         
-        //         PartnerPhotoUrl = c.Participants.FirstOrDefault(p => p.UserId != userId).User.TouristProfile != null 
-        //             ? c.Participants.FirstOrDefault(p => p.UserId != userId).User.TouristProfile.AvatarFile.FilePath 
-        //             : c.Participants.FirstOrDefault(p => p.UserId != userId).User.GuideProfile.ava,
-        //         
-        //         LastMessageText = c.LastMessage.AttachmentFileId != null ? "📎 Attachment" : c.LastMessage.Text,
-        //         LastMessageTime = c.LastMessage.SentAt,
-        //         UnreadCount = c.Messages.Count(m =>m.ChatId==c.id &&  )
-        //     })
-        //     .ToListAsync();
-        //
-        //
-        // bool hasmore = dtos.Count() > pageSize;
-        // if(hasmore)
-        //     dtos.RemoveAt(pageSize);
-        //
-        // var nextCursor = dtos.Any() ? dtos.Last().LastMessageTime : (DateTime?)null;
-        //
-        // return new PagedResult<ChatListDto>
-        // {
-        //     items = dtos,
-        //     NextCursor = nextCursor,
-        //     hasMore = hasmore
-        // };
+        var query = _unitOfWork.Context.Set<Chat>().AsQueryable()
+            .AsNoTracking()
+            .Where(c => c.Participants.Any(p => p.UserId == userId) && c.LastMessageId!=null);
+        
+        if (beforeDate.HasValue)
+            query = query.Where(c=>c.LastMessage.SentAt<beforeDate.Value);
+        
+        var dtos = await query.OrderByDescending(c => c.LastMessage.SentAt)
+            .Take(pageSize + 1)
+            .Select(c => new ChatListDto
+            {
+                ChatId = c.Id,
+                PartnerId = c.Participants.FirstOrDefault(p=>p.UserId!=userId).UserId,
+                PartnerName = c.Participants.FirstOrDefault(p=>p.UserId!=userId).User.UserName ,
+                
+                PartnerPhotoUrl = c.Participants.FirstOrDefault(p=>p.UserId!=userId).User.PhotoUrl?? "No Photo",
+                
+                LastMessageText = c.LastMessage.AttachmentFileId!=null? "📎 Attachment" : c.LastMessage.Text,
+                LastMessageTime = c.LastMessage.SentAt,
+                UnreadCount = c.Messages.Count(m =>m.ChatId==c.Id && m.Id>
+                    (c.Participants.FirstOrDefault(p=>p.UserId==userId).LastSeenMessageId??0 ) )
+            })
+            .ToListAsync();
+        
+        
+        bool hasmore = dtos.Count() > pageSize;
+        if(hasmore)
+            dtos.RemoveAt(pageSize);
+        
+        var nextCursor = dtos.Any() ? dtos.Last().LastMessageTime : (DateTime?)null;
+        
+        return new PagedResult<ChatListDto>
+        {
+            items = dtos,
+            NextCursor = nextCursor,
+            hasMore = hasmore
+        };
         
     }
 
