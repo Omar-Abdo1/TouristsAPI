@@ -8,4 +8,5 @@ public interface IChatService
     Task<MessageDto> SendMessageAsync(SendMessageDto dto, Guid senderId);
     public Task<PagedResult<ChatListDto>> GetUserChatsAsync(Guid userId, DateTime? beforeDate, int pageSize = 15);
     Task<PagedResult<MessageDto>> GetChatHistoryAsync(int chatId, int? cursor, Guid userId,int pageSize=15);
+    Task MarkMessagesAsReadAsync(MarkReadDto dto, Guid userId);
 }

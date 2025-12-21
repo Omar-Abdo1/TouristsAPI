@@ -89,6 +89,7 @@ public class ChatService : IChatService
         if (beforeDate.HasValue)
             query = query.Where(c=>c.LastMessage.SentAt<beforeDate.Value);
         
+        
         var dtos = await query.OrderByDescending(c => c.LastMessage.SentAt)
             .Take(pageSize + 1)
             .Select(c => new ChatListDto
@@ -172,6 +173,37 @@ public class ChatService : IChatService
             NextCursor = nextCursor,
             hasMore = hasmore
         };
+    }
+
+    public async Task MarkMessagesAsReadAsync(MarkReadDto dto, Guid userId)
+    {
+        var chat = await _unitOfWork.Repository<Chat>().GetByIdAsync(dto.ChatId,true,
+            c=>c.Participants);
+        if (chat == null)
+            throw new KeyNotFoundException($"No Chat with id = {dto.ChatId} is found");
+
+        var me = chat.Participants.FirstOrDefault(p=>p.UserId==userId);
+        if (me==null)
+            throw new UnauthorizedAccessException("You Are Not Member In This Chat");
+        
+        if(me.LastSeenMessageId>=dto.LastSeenMessageId)
+            return;
+
+        me.LastSeenMessageId = dto.LastSeenMessageId;
+        _unitOfWork.Repository<ChatParticipant>().Update(me);
+        await _unitOfWork.CompleteAsync();
+        
+        var otherParticipant = chat.Participants.FirstOrDefault(p=>p.UserId!=userId);
+
+        if (otherParticipant != null)
+        {
+            var ConnectionIds = await _tracker.GetConnections(otherParticipant.UserId.ToString());
+            if (ConnectionIds.Any())
+            {
+                await _hubContext.Clients.Clients(ConnectionIds).SendAsync(ChatHubMethods.MarkMessagesRead, dto);
+            }
+        }
+
     }
 
     private async Task<Chat> GetOrCreatePrivateChatAsync(Guid senderId, Guid receiverId)
