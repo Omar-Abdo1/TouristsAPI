@@ -26,7 +26,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
         _context.Set<T>().Update(entity);
     }
 
-    public void Delete(T entity)
+    public void SoftDelete(T entity)
     {
         entity.IsDeleted = true;
         entity.DeletedAt = DateTime.UtcNow;

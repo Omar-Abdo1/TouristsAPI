@@ -90,36 +90,55 @@ public class ChatService : IChatService
             query = query.Where(c=>c.LastMessage.SentAt<beforeDate.Value);
         
         
-        var dtos = await query.OrderByDescending(c => c.LastMessage.SentAt)
-            .Take(pageSize + 1)
-            .Select(c => new ChatListDto
-            {
-                ChatId = c.Id,
-                PartnerId = c.Participants.FirstOrDefault(p=>p.UserId!=userId).UserId,
-                PartnerName = c.Participants.FirstOrDefault(p=>p.UserId!=userId).User.UserName ,
-                
-                PartnerPhotoUrl = c.Participants.FirstOrDefault(p=>p.UserId!=userId).User.PhotoUrl?? "No Photo",
-                
-                LastMessageText = c.LastMessage.AttachmentFileId!=null? "📎 Attachment" : c.LastMessage.Text,
-                LastMessageTime = c.LastMessage.SentAt,
-                UnreadCount = c.Messages.Count(m =>m.ChatId==c.Id && m.Id>
-                    (c.Participants.FirstOrDefault(p=>p.UserId==userId).LastSeenMessageId??0 ) )
-            })
-            .ToListAsync();
-        
-        
-        bool hasmore = dtos.Count() > pageSize;
-        if(hasmore)
-            dtos.RemoveAt(pageSize);
-        
-        var nextCursor = dtos.Any() ? dtos.Last().LastMessageTime : (DateTime?)null;
-        
-        return new PagedResult<ChatListDto>
+       var chatProjections = await query
+        .OrderByDescending(c => c.LastMessage.SentAt)
+        .Take(pageSize + 1)
+        .Select(c => new 
         {
-            items = dtos,
-            NextCursor = nextCursor,
-            hasMore = hasmore
-        };
+            Chat = c,
+            Partner = c.Participants.FirstOrDefault(p => p.UserId != userId),
+            MyLastSeen = c.Participants.FirstOrDefault(p => p.UserId == userId).LastSeenMessageId ?? 0,
+            
+            RealLastMessage = c.Messages
+                .Where(m => !m.HiddenForUsers.Any(h => h.UserId == userId))
+                .OrderByDescending(m => m.SentAt)
+                .Select(m => new { m.Text, m.SentAt, m.AttachmentFileId })
+                .FirstOrDefault(),
+            
+            UnreadCount = c.Messages.Count(m => 
+                m.Id > (c.Participants.FirstOrDefault(p => p.UserId == userId).LastSeenMessageId ?? 0)
+                && !m.HiddenForUsers.Any(h => h.UserId == userId)
+            )
+        })
+        .ToListAsync();
+   
+       bool hasmore = chatProjections.Count > pageSize;
+       if (hasmore)
+           chatProjections.RemoveAt(pageSize);
+       
+    var dtos = chatProjections.Select(x => new ChatListDto
+    {
+        ChatId = x.Chat.Id,
+        PartnerId = x.Partner?.UserId ?? Guid.Empty,
+        PartnerName = x.Partner?.User?.UserName ?? "Unknown",
+        PartnerPhotoUrl = x.Partner?.User?.PhotoUrl ?? "No Photo",
+        
+        LastMessageText = x.RealLastMessage == null ? "Chat Cleared" : 
+                          (x.RealLastMessage.AttachmentFileId != null ? "📎 Attachment" : x.RealLastMessage.Text),
+        
+        LastMessageTime = x.RealLastMessage?.SentAt ?? x.Chat.LastMessage.SentAt,
+        UnreadCount = x.UnreadCount
+    }).ToList();
+
+    
+    var nextCursor = dtos.Any() ? dtos.Last().LastMessageTime : (DateTime?)null;
+
+    return new PagedResult<ChatListDto>
+    {
+        items = dtos,
+        NextCursor = nextCursor,
+        hasMore = hasmore
+    };
         
     }
 
@@ -134,7 +153,8 @@ public class ChatService : IChatService
         
         var query = _unitOfWork.Context.Set<Message>().AsQueryable().
             AsNoTracking()
-            .Where(c => c.ChatId == chatId);
+            .Where(m => m.ChatId == chatId)
+            .Where(m=>!m.HiddenForUsers.Any(h=>h.UserId==userId));
         if (cursor.HasValue)
             query = query.Where(m => m.Id < cursor.Value);
         
@@ -204,6 +224,64 @@ public class ChatService : IChatService
             }
         }
 
+    }
+
+    public async Task DeleteMessageAsync(int id, Guid userId, bool forEveryone)
+    {
+        var message =await _unitOfWork.Repository<Message>().GetByIdAsync(id);
+        if(message==null)
+            throw new KeyNotFoundException($"Message With Id = {id} was not found");
+
+        if (forEveryone)
+        {
+            if(message.SenderId!=userId)
+                throw new UnauthorizedAccessException("Can't Delete Message For EveryOne");
+            
+         
+            if (message.AttachmentFileId.HasValue)
+            {
+                await _fileService.DeleteFileAsync(message.AttachmentFileId.Value, userId, false);
+            }
+            _unitOfWork.Repository<Message>().SoftDelete(message);
+            
+            var chat = await _unitOfWork.Repository<Chat>()
+                .GetByIdAsync(message.ChatId, true, c => c.Participants);
+             
+            var otherParticipant = chat.Participants.FirstOrDefault(p=>p.UserId!=userId);
+
+            if (otherParticipant != null)
+            {
+                var ConnectionIds = await _tracker.GetConnections(otherParticipant.UserId.ToString());
+                if (ConnectionIds.Any())
+                {
+                    await _hubContext.Clients.Clients(ConnectionIds)
+                        .SendAsync(ChatHubMethods.MessageDeleted, new 
+                        { 
+                            MessageId = message.Id, 
+                            ChatId = message.ChatId 
+                        });
+                }
+            }
+            
+        }
+        else
+        { // Delete for Me
+            var existingVisibility = await _unitOfWork.Repository<MessageVisibility>()
+                .GetEntityByConditionAsync(v => v.MessageId == message.Id && v.UserId == userId);
+
+            if (existingVisibility == null)
+            {
+                var visibility = new MessageVisibility
+                {
+                    MessageId = message.Id,
+                    UserId = userId
+                };
+            
+                _unitOfWork.Repository<MessageVisibility>().Add(visibility);
+            }
+        }
+
+        await _unitOfWork.CompleteAsync();
     }
 
     private async Task<Chat> GetOrCreatePrivateChatAsync(Guid senderId, Guid receiverId)

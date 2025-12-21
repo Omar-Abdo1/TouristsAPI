@@ -97,7 +97,7 @@ public class ReviewService : IReviewService
         if (review.TouristId != tourist.Id)
             throw new Exception("You can only delete your own reviews.");
         
-        _unitOfWork.Repository<Review>().Delete(review);
+        _unitOfWork.Repository<Review>().SoftDelete(review);
         await _unitOfWork.CompleteAsync();
     }
 

@@ -88,7 +88,7 @@ public class FileService : IFileService
         if (fileRecord.UserId != userId && !isAdmin)
             throw new UnauthorizedAccessException("You do not own this file.");
 
-        _unitOfWork.Repository<FileRecord>().Delete(fileRecord);
+        _unitOfWork.Repository<FileRecord>().SoftDelete(fileRecord);
         
         await _unitOfWork.CompleteAsync();
         

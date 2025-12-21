@@ -164,7 +164,7 @@ public class TourService : ITourService
         if(tour.GuideProfile.UserId != userId)
             throw new UnauthorizedAccessException("You do not own this tour.");
         
-        _unitOfWork.Repository<Tour>().Delete(tour);
+        _unitOfWork.Repository<Tour>().SoftDelete(tour);
         await _unitOfWork.CompleteAsync();
         return true;
     }

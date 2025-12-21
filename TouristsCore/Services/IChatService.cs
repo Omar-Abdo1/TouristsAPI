@@ -9,4 +9,5 @@ public interface IChatService
     public Task<PagedResult<ChatListDto>> GetUserChatsAsync(Guid userId, DateTime? beforeDate, int pageSize = 15);
     Task<PagedResult<MessageDto>> GetChatHistoryAsync(int chatId, int? cursor, Guid userId,int pageSize=15);
     Task MarkMessagesAsReadAsync(MarkReadDto dto, Guid userId);
+    Task DeleteMessageAsync(int id, Guid userId, bool forEveryone);
 }

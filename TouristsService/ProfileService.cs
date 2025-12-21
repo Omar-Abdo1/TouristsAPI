@@ -207,7 +207,7 @@ public class ProfileService : IProfileService
             var oldFile = await _unitOfWork.Repository<FileRecord>().GetByIdAsync(oldFileId);
             if (oldFile != null)
             {
-                _unitOfWork.Repository<FileRecord>().Delete(oldFile); // softDelete 
+                _unitOfWork.Repository<FileRecord>().SoftDelete(oldFile); // softDelete 
             }
         }
         profile.AvatarFileId = newFileId;

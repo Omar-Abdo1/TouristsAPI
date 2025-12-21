@@ -88,21 +88,29 @@ public class ChatController : ControllerBase
         }
     }
     
-    //
-    // [HttpDelete("message/{id:int}")]    
-    // public async Task<IActionResult> DeleteMessage(int id, [FromQuery] bool forEveryone = false) // Updates DB and notifies the sender via SignalR
-    // {
-    //     var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-    //     try
-    //     {
-    //      await _chatService.DeleteMessageAsync(id, userId, forEveryone);
-    //      
-    //       return Ok(new { Message = "Deleted successfully" });
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         return BadRequest(new ApiErrorResponse(400, ex.Message));
-    //     }
-    // }
+    
+    [HttpDelete("message/{id:int}")]    
+    public async Task<IActionResult> DeleteMessage(int id, [FromQuery] bool forEveryone = false) // Updates DB and notifies the sender via SignalR
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        try
+        {
+         await _chatService.DeleteMessageAsync(id, userId, forEveryone);
+         
+          return Ok(new { Message = "Deleted successfully" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new ApiErrorResponse(404, ex.Message));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new ApiErrorResponse(401, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiErrorResponse(400, ex.Message));
+        }
+    }
     
 }

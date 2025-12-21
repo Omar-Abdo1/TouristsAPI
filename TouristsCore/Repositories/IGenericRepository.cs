@@ -7,7 +7,7 @@ public interface IGenericRepository<T> where T : BaseEntity
 {
     void Add(T entity);
     void Update(T entity);
-    void Delete(T entity);
+    void SoftDelete(T entity);
     void DeletePermanently(T entity);
     void DeletePermanentlyRange(IEnumerable<T> entites);
     
