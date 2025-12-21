@@ -8,6 +8,8 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
 {
     public void Configure(EntityTypeBuilder<Message> builder)
     {
+
+        builder.HasIndex(m => m.SentAt);
         // Chat -> Message
         // Rule:  Delete Chat = Delete All Messages.
         builder.HasOne(m => m.Chat)
