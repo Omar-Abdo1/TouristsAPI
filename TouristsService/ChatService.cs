@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Stripe.Terminal;
 using TouristsAPI.Hubs;
 using TouristsCore;
 using TouristsCore.DTOS.Chat;
 using TouristsCore.Entities;
 using TouristsCore.Services;
+using TouristsService.Pagination;
 
 namespace TouristsService;
 
@@ -49,6 +51,8 @@ public class ChatService : IChatService
         _unitOfWork.Repository<Message>().Add(message);
 
         chat.LastMessageId = message.Id;
+
+        var me = chat.Participants.First(p => p.UserId == senderId);
         
         _unitOfWork.ChatRepository.Update(chat);
         
@@ -74,6 +78,52 @@ public class ChatService : IChatService
         }
 
         return messageDto;
+    }
+
+    public async Task<PagedResult<ChatListDto>> GetUserChatsAsync(Guid userId,DateTime? beforeDate,int pageSize=15)
+    {
+        throw new NotImplementedException();
+        // var query = _unitOfWork.Context.Set<Chat>().AsQueryable()
+        //     .AsNoTracking()
+        //     .Include(c => c.LastMessage)
+        //     .Include(c => c.Participants).ThenInclude(p => p.User)
+        //     .Where(c => c.Participants.Any(p => p.UserId == userId) && c.LastMessageId!=null);
+        //
+        // if (beforeDate.HasValue)
+        //     query = query.Where(c=>c.LastMessage.CreatedAt<beforeDate.Value);
+        //
+        // var dtos = await query.OrderByDescending(c => c.LastMessage.CreatedAt)
+        //     .Take(pageSize + 1)
+        //     .Select(c => new ChatListDto
+        //     {
+        //         ChatId = c.Id,
+        //         PartnerId = c.Participants.FirstOrDefault(p=>p.UserId!=userId).UserId,
+        //         PartnerName = c.Participants.FirstOrDefault(p=>p.UserId!=userId).User.UserName ,
+        //         
+        //         PartnerPhotoUrl = c.Participants.FirstOrDefault(p => p.UserId != userId).User.TouristProfile != null 
+        //             ? c.Participants.FirstOrDefault(p => p.UserId != userId).User.TouristProfile.AvatarFile.FilePath 
+        //             : c.Participants.FirstOrDefault(p => p.UserId != userId).User.GuideProfile.ava,
+        //         
+        //         LastMessageText = c.LastMessage.AttachmentFileId != null ? "📎 Attachment" : c.LastMessage.Text,
+        //         LastMessageTime = c.LastMessage.SentAt,
+        //         UnreadCount = c.Messages.Count(m =>m.ChatId==c.id &&  )
+        //     })
+        //     .ToListAsync();
+        //
+        //
+        // bool hasmore = dtos.Count() > pageSize;
+        // if(hasmore)
+        //     dtos.RemoveAt(pageSize);
+        //
+        // var nextCursor = dtos.Any() ? dtos.Last().LastMessageTime : (DateTime?)null;
+        //
+        // return new PagedResult<ChatListDto>
+        // {
+        //     items = dtos,
+        //     NextCursor = nextCursor,
+        //     hasMore = hasmore
+        // };
+        
     }
 
     private async Task<Chat> GetOrCreatePrivateChatAsync(Guid senderId, Guid receiverId)
