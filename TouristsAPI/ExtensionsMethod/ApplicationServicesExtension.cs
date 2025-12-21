@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TouristsAPI.ErrorResponses;
 using TouristsAPI.Helpers;
+using TouristsAPI.Hubs;
 using TouristsCore;
 using TouristsCore.Entities;
 using TouristsCore.Repositories;
@@ -17,9 +18,9 @@ public static class ApplicationServicesExtension
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, string connectionString)
     {
         services.AddDbContext<TouristsContext>(options =>
-        {
-            options.UseSqlServer(connectionString);
-        });
+            options.UseSqlServer(connectionString)
+            , 
+            ServiceLifetime.Scoped );
 
         services.AddIdentity<User, IdentityRole<Guid>>()
             .AddEntityFrameworkStores<TouristsContext>()
@@ -44,6 +45,8 @@ public static class ApplicationServicesExtension
         services.AddScoped<IEmailService,EmailService>();
         services.AddScoped<IJobService, JobService>();
         services.AddScoped<PaymentService>();
+        services.AddScoped<IChatService,ChatService>();
+        services.AddSingleton<ConnectionTracker>();
         
         #region Validation Error 
         services.Configure<ApiBehaviorOptions>(options =>

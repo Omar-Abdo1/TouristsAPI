@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Stripe;
 using TouristsAPI.ExtensionsMethod;
+using TouristsAPI.Hubs;
 using TouristsAPI.MiddleWares;
 using TouristsCore.Entities;
 using TouristsRepository;
@@ -109,6 +110,8 @@ public class Program
             });
             
         });
+
+        builder.Services.AddSignalR(); // for Real-Time Application
         
         
         
@@ -138,6 +141,8 @@ public class Program
         app.MapControllers();
         
         app.UseHangfireDashboard("/hangfire");
+        
+        app.MapHub<ChatHub>("/hubs/chat");
 
         app.AddingrecurringJobs();
         

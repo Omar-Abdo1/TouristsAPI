@@ -10,16 +10,24 @@ namespace TouristsRepository;
 public class UnitOfWork : IUnitOfWork
 {
     private TouristsContext _context;
-    private readonly IServiceProvider _serviceProvider;
-
+    
+    
     private readonly Hashtable _repositories;
     // key value pair   NameOfModel : GenericRepository<Model>  string->object
+    
+    private IChatRepository _chatRepository;
 
-    public UnitOfWork(TouristsContext context,IServiceProvider serviceProvider)
+    public UnitOfWork(TouristsContext context)
     {
         _context = context;
-        _serviceProvider = serviceProvider;
         _repositories = new Hashtable();
+    }
+    public IChatRepository ChatRepository
+    {
+        get
+        {
+            return _chatRepository?? new ChatRepository(_context);
+        }
     }
 
     public ValueTask DisposeAsync() => _context.DisposeAsync();
@@ -31,8 +39,9 @@ public class UnitOfWork : IUnitOfWork
         var Type = typeof(T).Name;
         if (!_repositories.ContainsKey(Type)) // First Time
         {
-            var Repository = _serviceProvider.GetRequiredService<IGenericRepository<T>>();
-            _repositories.Add(Type, Repository);
+            var repositoryType = typeof(GenericRepository<T>);
+            var repositoryInstance = Activator.CreateInstance(repositoryType, _context);
+            _repositories.Add(Type, repositoryInstance);
         }
 
         return _repositories[Type] as IGenericRepository<T>;
