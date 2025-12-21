@@ -122,6 +122,58 @@ public class ChatService : IChatService
         
     }
 
+    public async Task<PagedResult<MessageDto>> GetChatHistoryAsync(int chatId, int? cursor, Guid userId,int pageSize=15)
+    {
+        var chat = await _unitOfWork.Repository<Chat>().GetByIdAsync(chatId,true,c=>c.Participants);
+        if (chat == null)
+            throw new KeyNotFoundException($"No Chat with id = {chatId} is found");
+
+        if (!chat.Participants.Any(p => p.UserId == userId))
+            throw new UnauthorizedAccessException("You Are Not Member In This Chat");
+        
+        var query = _unitOfWork.Context.Set<Message>().AsQueryable().
+            AsNoTracking()
+            .Where(c => c.ChatId == chatId);
+        if (cursor.HasValue)
+            query = query.Where(m => m.Id < cursor.Value);
+        
+        var partnerLastSeenId = chat.Participants
+            .Where(p => p.UserId != userId)
+            .Select(p => p.LastSeenMessageId)
+            .FirstOrDefault() ?? 0;
+        
+        var dtos = await query.
+            OrderByDescending(m => m.Id)
+            .Take(pageSize + 1)
+            .Select(m => new MessageDto
+            {
+                Id = m.Id,
+                SenderId = m.SenderId,
+                Text = m.Text,
+                SentAt = m.SentAt,
+                ReplyToMessageId = m.ReplyToMessageId,
+                AttachmentUrl = m.AttachmentFile != null ? m.AttachmentFile.FilePath : null,
+                AttachmentType = m.AttachmentFile != null ? m.AttachmentFile.ContentType : null,
+                IsRead = (m.SenderId==userId && m.Id<=partnerLastSeenId)
+                // does my partner see my message or not 
+            })
+            .ToListAsync();
+        
+        bool hasmore =  dtos.Count() > pageSize;
+        
+        if(hasmore)
+            dtos.RemoveAt(pageSize);
+        
+        var nextCursor = dtos.Any() ? dtos.Last().Id : (int?)null;
+        
+        return new PagedResult<MessageDto>
+        {
+            items = dtos,
+            NextCursor = nextCursor,
+            hasMore = hasmore
+        };
+    }
+
     private async Task<Chat> GetOrCreatePrivateChatAsync(Guid senderId, Guid receiverId)
     {
         var chat = await _unitOfWork.ChatRepository.GetPrivateChatAsync(senderId, receiverId);

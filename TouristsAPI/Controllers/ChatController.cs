@@ -42,14 +42,29 @@ public class ChatController : ControllerBase
         return Ok(result);
     }
 
-    // [HttpGet("{chatId:int}/messages")]
-    // public async Task<IActionResult> GetHistory(int chatId,[FromQuery]int?cursor)
-    // {
-    //     var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-    //     var result = await _chatService.GetChatHistoryAsync(chatId,cursor,userId);
-    //     return Ok(result);
-    // }
-    //
+    [HttpGet("{chatId:int}/messages")]
+    public async Task<IActionResult> GetHistory(int chatId,[FromQuery]int?cursor,[FromQuery]int pageSize=15)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        try
+        {
+            var result = await _chatService.GetChatHistoryAsync(chatId, cursor, userId);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new ApiErrorResponse(404, ex.Message));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new ApiErrorResponse(401, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiErrorResponse(404, ex.Message));
+        }
+    }
+    
     // [HttpPost("read")]
     // public async Task<IActionResult> MarkRead([FromBody] MarkReadDto dto) // Updates DB and notifies the sender via SignalR
     // {
