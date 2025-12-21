@@ -9,7 +9,11 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
     public void Configure(EntityTypeBuilder<Message> builder)
     {
 
-        builder.HasIndex(m => m.SentAt);
+        builder.HasIndex(m => m.SentAt); // for cursor 
+
+        builder.HasIndex(m => new {m.ChatId,m.SentAt });
+        //get me the messages for chat x sorted by sendAt  where(chatId).orderby(sentAt)
+        
         // Chat -> Message
         // Rule:  Delete Chat = Delete All Messages.
         builder.HasOne(m => m.Chat)
