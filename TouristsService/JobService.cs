@@ -6,6 +6,7 @@ using TouristsCore.Entities;
 using TouristsCore.Enums;
 using TouristsCore.Enums.Payment;
 using TouristsCore.Services;
+using TouristsRepository;
 
 namespace TouristsService;
 
@@ -21,14 +22,14 @@ public interface IJobService
 
 public class JobService : IJobService
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly TouristsContext _context;
     private readonly IWebHostEnvironment _env;
     private readonly IEmailService _emailService;
     private readonly ILogger<JobService> _logger;
 
-    public JobService(IUnitOfWork unitOfWork,IWebHostEnvironment env,IEmailService emailService,ILogger<JobService>  logger)
+    public JobService(TouristsContext context,IWebHostEnvironment env,IEmailService emailService,ILogger<JobService>  logger)
     {
-        _unitOfWork = unitOfWork;
+        _context = context;
         _env = env;
         _emailService = emailService;
         _logger = logger;
@@ -36,33 +37,46 @@ public class JobService : IJobService
 
     public async Task AutoCancelUnpaidBookings()
     {
-        var oneHourAgo = DateTime.UtcNow.AddHours(-1); // delete any booking without paid after 12h
+        var timeoutThreshold = DateTime.UtcNow.AddHours(-1); 
         
-        var staleBookings = await _unitOfWork.Context.Set<Booking>()
-            .Include(b => b.TourSchedule) 
-            .Where(b => b.Status == BookingStatus.Pending && b.BookingDate < oneHourAgo)
+        var staleBookingIds = await _context.Bookings
+            .AsNoTracking() 
+            .Where(b => b.Status == BookingStatus.Pending && b.BookingDate < timeoutThreshold)
+            .Select(b => b.Id)
             .ToListAsync();
 
-        if (!staleBookings.Any())
-        {
-            _logger.LogInformation("No booking in the database");
-            return; 
-        }
-        
-        foreach (var booking in staleBookings)
-        {
-            booking.Status = BookingStatus.Cancelled;
+        if (!staleBookingIds.Any()) return;
 
-            if (booking.TourSchedule != null)
+        int successCount = 0;
+
+        foreach (var id in staleBookingIds)
+        {
+            try
             {
-                booking.TourSchedule.AvailableSeats += booking.TicketCount;
+                var booking = await _context.Set<Booking>().FindAsync(id);
+                
+                if (booking == null || booking.Status != BookingStatus.Pending) 
+                    continue; 
+
+                booking.Status = BookingStatus.Cancelled;
+                
+                await _context.SaveChangesAsync();
+                successCount++;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                _logger.LogWarning($"[Job] Concurrency conflict for Booking {id}. Skipping.");
+                _context.ChangeTracker.Clear();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Job] Error cancelling booking {Id}", id);
+                _context.ChangeTracker.Clear();
             }
         }
         
-        _unitOfWork.Context.UpdateRange(staleBookings);
-        await _unitOfWork.CompleteAsync();
-        
-        _logger.LogInformation($"[Job] Cleaned up {staleBookings.Count} unpaid bookings.");
+        if(successCount > 0)
+            _logger.LogInformation($"[Job] Cleaned up {successCount} unpaid bookings.");
     }
 
     public async Task DeleteOldFilesAsync()
@@ -70,7 +84,7 @@ public class JobService : IJobService
         var thresholdDate = DateTime.UtcNow.AddDays(-7);
 
         
-        var oldFiles = await _unitOfWork.Context.Set<FileRecord>()
+        var oldFiles = await _context.Set<FileRecord>()
             .IgnoreQueryFilters()
             .Where(f => f.IsDeleted && f.DeletedAt < thresholdDate)
             .ToListAsync();
@@ -83,12 +97,13 @@ public class JobService : IJobService
         
         var oldFileIds = oldFiles.Select(f => f.Id).ToList();
         
-        var relatedMedia = await _unitOfWork.Context.Set<TourMedia>()
+        var relatedMedia = await _context.Set<TourMedia>()
             .Where(tm => oldFileIds.Contains(tm.FileId)).ToListAsync();
 
         if (relatedMedia.Any())
         {
-            _unitOfWork.Context.Set<TourMedia>().RemoveRange(relatedMedia);
+            _context.Set<TourMedia>().RemoveRange(relatedMedia);
+            await _context.SaveChangesAsync();
         }
         
         foreach (var file in oldFiles)
@@ -112,11 +127,10 @@ public class JobService : IJobService
             }
         }
 
-        //  Hard Delete from Database
-        _unitOfWork.Context.Set<FileRecord>().RemoveRange(oldFiles);
-        await _unitOfWork.CompleteAsync();
+        _context.Set<FileRecord>().RemoveRange(oldFiles);
+        await _context.SaveChangesAsync();
 
-       _logger.LogInformation($"[Job] Removed {oldFiles.Count} old file records from DB.");
+        _logger.LogInformation($"[Job] Removed {oldFiles.Count} old file records from DB.");
     }
 
     public async Task SendReviewRemindersAsync()
@@ -126,7 +140,7 @@ public class JobService : IJobService
         var startWindow = yesterday.AddHours(-12); 
         var endWindow = yesterday.AddHours(12);
 
-        var bookingsToRemind = await _unitOfWork.Context.Set<Booking>()
+        var bookingsToRemind = await _context.Set<Booking>()
             .Include(b => b.Tour)
             .Include(b => b.TourSchedule)
             .Include(b => b.Tourist).ThenInclude(t => t.User)
@@ -134,7 +148,7 @@ public class JobService : IJobService
                 (b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.Completed) &&
                 b.TourSchedule.StartTime.AddMinutes(b.Tour.DurationMinutes) >= startWindow &&
                 b.TourSchedule.StartTime.AddMinutes(b.Tour.DurationMinutes) <= endWindow &&
-                !_unitOfWork.Context.Set<Review>().Any(r => r.BookingId == b.Id))
+                !_context.Set<Review>().Any(r => r.BookingId == b.Id))
             .ToListAsync();
         
         if (!bookingsToRemind.Any())
@@ -143,38 +157,34 @@ public class JobService : IJobService
             return;
         }
 
+        int sentCount = 0;
+
         foreach (var booking in bookingsToRemind)
         {
-            if (booking.Tourist?.User == null) continue;
+            if (booking.Tourist?.User == null || string.IsNullOrEmpty(booking.Tourist.User.Email)) 
+                continue;
+            
             var subject = $"How was your trip to {booking.Tour.Title}? ⭐";
-        
-            // ***Frontend Review Page
             var reviewLink = $"https://Tourist.com/bookings/{booking.Id}/write-review";
 
-            var body = $@"
-            <div style='font-family: Arial, sans-serif; padding: 20px;'>
-                <h2>Welcome Back, {booking.Tourist.FullName}!</h2>
-                <p>We hope you enjoyed your tour to <strong>{booking.Tour.Title}</strong>.</p>
-                <p>Your feedback helps other travelers and helps our guides improve.</p>
-                <br>
-                <a href='{reviewLink}' style='background-color: #f1c40f; color: black; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>
-                    ⭐⭐⭐⭐⭐ Rate Your Trip
-                </a>
-                <br><br>
-                <p>It only takes 30 seconds!</p>
-            </div>";
-            
+            var body = $@"<div style='font-family: Arial, sans-serif; padding: 20px;'>
+                            <h2>Welcome Back, {booking.Tourist.FullName}!</h2>
+                            <p>We hope you enjoyed your tour to <strong>{booking.Tour.Title}</strong>.</p>
+                            <a href='{reviewLink}'>⭐⭐⭐⭐⭐ Rate Your Trip</a>
+                          </div>";
             try
             {
                 await _emailService.SendEmailAsync(booking.Tourist.User.Email, subject, body);
+                sentCount++;
             }
             catch (Exception ex)
             {
-               _logger.LogError(ex,$"[Job] Failed to email booking {booking.Id}: {ex.Message}");
+                _logger.LogError(ex, $"[Job] Failed to email booking {booking.Id}");
             }
         }
 
-       _logger.LogInformation($"[Job] Sent {bookingsToRemind.Count} review reminders.");
+        if (sentCount > 0)
+            _logger.LogInformation($"[Job] Sent {sentCount} review reminders.");
             
         }
 
@@ -182,7 +192,7 @@ public class JobService : IJobService
     {
         var threshold = DateTime.UtcNow.AddHours(-24);
 
-        var expiredPayments = await _unitOfWork.Context.Set<Payment>()
+        var expiredPayments = await _context.Set<Payment>()
             .Include(p => p.Booking)
             .Where(p => p.Status == PaymentStatus.Pending && p.CreatedAt < threshold)
             .ToListAsync();
@@ -197,11 +207,21 @@ public class JobService : IJobService
             if (payment.Booking != null && payment.Booking.Status == BookingStatus.Pending)
             {
                 payment.Booking.Status = BookingStatus.Cancelled;
+                _context.Entry(payment.Booking).State = EntityState.Modified;
             }
         }
-        _unitOfWork.Context.UpdateRange(expiredPayments);
-        await _unitOfWork.CompleteAsync();
 
-        _logger.LogInformation($"[Job] Soft-deleted {expiredPayments.Count} expired payments.");
+        try 
+        {
+            _context.UpdateRange(expiredPayments);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"[Job] Soft-deleted {expiredPayments.Count} expired payments.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Job] Failed to batch cancel expired payments.");
+            _context.ChangeTracker.Clear();
+        }
+
     }
 }
