@@ -376,37 +376,6 @@ Methods that clients can invoke on the hub:
 | `Typing` | `Guid receiverId` | Notify other user you're typing |
 | `StopTyping` | `Guid receiverId` | Notify other user you stopped typing |
 
-### Example Client Code (JavaScript)
-
-```javascript
-// Connect to hub
-const connection = new signalR.HubConnectionBuilder()
-    .withUrl("/chatHub", {
-        accessTokenFactory: () => localStorage.getItem("accessToken")
-    })
-    .withAutomaticReconnect()
-    .build();
-
-// Listen for new messages
-connection.on("ReceiveNewMessage", (message) => {
-    displayMessage(message);
-    playNotificationSound();
-});
-
-// Listen for typing indicator
-connection.on("UserIsTyping", (userId) => {
-    showTypingIndicator(userId);
-});
-
-// Notify when typing
-function notifyTyping(receiverId) {
-    connection.invoke("Typing", receiverId);
-}
-
-// Start connection
-await connection.start();
-```
-
 ---
 
 ## ⚙️ Background Jobs
@@ -550,16 +519,6 @@ Create `appsettings.Development.json`:
     "SenderPassword": "your-app-specific-password",
     "EnableSsl": true
   },
-  "FileStorage": {
-    "Provider": "Local",  // Options: Local, AzureBlob, S3
-    "BasePath": "wwwroot/uploads",
-    "MaxFileSizeMB": 10
-  },
-  "RateLimit": {
-    "EnableRateLimiting": true,
-    "GlobalLimit": 100,
-    "GlobalWindow": 10
-  }
 }
 ```
 
@@ -588,80 +547,6 @@ stripe listen --forward-to http://localhost:8000/api/Payment/webhook
 # Test payment flow
 stripe trigger payment_intent.succeeded
 ```
-
----
-
-## 🔮 Future Improvements
-
-### Planned Features
-
-#### High Priority
-- [ ] **Multi-language Support**: i18n/l10n for global accessibility
-- [ ] **Push Notifications**: Firebase Cloud Messaging for mobile apps
-- [ ] **Tour Categories**: Organize tours by activity type (Adventure, Culture, Food, etc.)
-- [ ] **Advanced Search**: Full-text search with Elasticsearch
-- [ ] **Tour Packages**: Bundle multiple tours with discounts
-- [ ] **Wishlist/Favorites**: Save tours for later
-
-#### Medium Priority
-- [ ] **Geo-location Services**: Google Maps integration for meeting points
-- [ ] **Dynamic Pricing**: Peak season and demand-based pricing algorithms
-- [ ] **Cancellation Policies**: Flexible rules (24h free cancellation, 50% refund, etc.)
-- [ ] **Group Booking Discounts**: Automatic pricing tiers for large groups
-- [ ] **Loyalty Program**: Points system and rewards
-- [ ] **Guide Verification**: Background checks and certification uploads
-- [ ] **Multi-currency Support**: Convert prices based on user location
-- [ ] **Review Photos**: Allow tourists to upload photos with reviews
-
-#### Low Priority
-- [ ] **AI Tour Recommendations**: ML-based personalized suggestions
-- [ ] **Video Tours**: Upload promotional videos
-- [ ] **Live Tour Tracking**: Real-time GPS tracking during tours
-- [ ] **Social Sharing**: Share tours on social media
-- [ ] **Gift Vouchers**: Purchase tours as gifts
-- [ ] **Subscription Model**: VIP membership with exclusive tours
-
----
-
-### Technical Debt & Improvements
-
-#### Performance
-- [ ] Implement **Redis caching** for frequently accessed data
-- [ ] Add **CDN** for static assets and images
-- [ ] Implement **database indexing strategy** review
-- [ ] Add **response compression** middleware
-- [ ] Optimize **N+1 query** patterns with eager loading
-
-#### Scalability
-- [ ] Migrate to **microservices architecture** (separate Chat, Payment, Booking services)
-- [ ] Implement **CQRS** pattern for complex read/write operations
-- [ ] Add **message queue** (RabbitMQ/Azure Service Bus) for async operations
-- [ ] Implement **database sharding** for multi-tenant support
-- [ ] Add **horizontal scaling** with load balancer
-
-#### Security
-- [ ] Implement **OAuth 2.0** authorization server
-- [ ] Add **two-factor authentication** (2FA)
-- [ ] Implement **API key management** for third-party integrations
-- [ ] Add **security headers** (CSP, HSTS, etc.)
-- [ ] Implement **audit logging** for sensitive operations
-- [ ] Add **automated security scanning** (SAST/DAST)
-
-#### DevOps
-- [ ] Set up **CI/CD pipeline** (GitHub Actions / Azure DevOps)
-- [ ] Implement **blue-green deployments**
-- [ ] Add **application monitoring** (Application Insights / Datadog)
-- [ ] Set up **distributed tracing** (OpenTelemetry)
-- [ ] Implement **automated backup** strategy
-- [ ] Add **disaster recovery** plan
-
-#### Code Quality
-- [ ] Achieve **90%+ test coverage**
-- [ ] Add **mutation testing**
-- [ ] Implement **architecture tests** (ArchUnit.NET)
-- [ ] Set up **code quality gates** (SonarQube)
-- [ ] Add **API versioning** strategy
-- [ ] Implement **GraphQL** endpoint as alternative to REST
 
 ---
 
