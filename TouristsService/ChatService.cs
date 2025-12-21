@@ -220,7 +220,7 @@ public class ChatService : IChatService
             var ConnectionIds = await _tracker.GetConnections(otherParticipant.UserId.ToString());
             if (ConnectionIds.Any())
             {
-                await _hubContext.Clients.Clients(ConnectionIds).SendAsync(ChatHubMethods.MarkMessagesRead, dto);
+                await _hubContext.Clients.Clients(ConnectionIds).SendAsync(ChatHubMethods.MessagesReadUpdated, dto);
             }
         }
 

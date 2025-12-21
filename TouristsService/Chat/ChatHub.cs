@@ -28,7 +28,30 @@ public class ChatHub : Hub
     {
         var userId = Context.User.FindFirstValue(ClaimTypes.NameIdentifier);
         await _tracker.UserDisconnected(userId, Context.ConnectionId);
+        var ConnectionIds = await _tracker.GetConnections(userId);
+        if(!ConnectionIds.Any())
         await Clients.All.SendAsync(ChatHubMethods.UserIsOffline, userId);
         await base.OnDisconnectedAsync(exception);
+    }
+    
+    public async Task Typing(string receiverId)
+    {
+        var senderId = Context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var connections = await _tracker.GetConnections(receiverId);
+        
+        if (connections.Any())
+        {
+            await Clients.Clients(connections).SendAsync(ChatHubMethods.OnUserTyping, senderId);
+        }
+    }
+    public async Task StopTyping(string receiverId)
+    {
+        var senderId = Context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var connections = await _tracker.GetConnections(receiverId);
+        
+        if (connections.Any())
+        {
+            await Clients.Clients(connections).SendAsync(ChatHubMethods.OnUserStoppedTyping, senderId);
+        }
     }
 }
