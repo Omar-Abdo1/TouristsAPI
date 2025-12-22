@@ -27,13 +27,12 @@ public class ChatService : IChatService
 
     public async Task<MessageDto> SendMessageAsync(SendMessageDto dto, Guid senderId)
     {
-        if (string.IsNullOrEmpty(dto.Text) && dto.File == null)
+        if (string.IsNullOrEmpty(dto.Text) && dto.AttachmentId == null)
             throw new Exception("Message Can Not Be Empty");
         var chat = await GetOrCreatePrivateChatAsync(senderId, dto.ReceiverId);
 
         var message = new Message
         {
-            CreatedAt = default,
             ChatId = chat.Id,
             SenderId = senderId,
             Text = dto.Text,
@@ -41,22 +40,26 @@ public class ChatService : IChatService
             SentAt = DateTime.UtcNow
         };
         
-        if (dto.File != null)
+        if (dto.AttachmentId.HasValue)
         {
-            var file = await _fileService.SaveFileAsync(dto.File, "Messages", senderId);
-            message.AttachmentFileId = file.Id;
-            message.AttachmentFile = file;
+            var fileRecord = await _unitOfWork.Repository<FileRecord>()
+                .GetByIdAsync(dto.AttachmentId.Value);
+            if (fileRecord == null) 
+                throw new Exception("Attachment not found");
+            if (fileRecord.UserId != senderId)
+                throw new Exception("Invalid attachment ownership");
+            message.AttachmentFileId = dto.AttachmentId.Value;
+            message.AttachmentFile = fileRecord;
         }
         
         _unitOfWork.Repository<Message>().Add(message);
 
-        chat.LastMessageId = message.Id;
-
-        var me = chat.Participants.First(p => p.UserId == senderId);
+        chat.LastMessage = message;
         
         _unitOfWork.ChatRepository.Update(chat);
-        
+
         await _unitOfWork.CompleteAsync();
+        
 
         var messageDto = new MessageDto
         {
