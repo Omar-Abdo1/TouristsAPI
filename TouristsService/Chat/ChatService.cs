@@ -305,6 +305,8 @@ public class ChatService : IChatService
             _unitOfWork.ChatRepository.Add(newChat);
             await _unitOfWork.CompleteAsync();
             return newChat;
+            
+        
     }
 
    

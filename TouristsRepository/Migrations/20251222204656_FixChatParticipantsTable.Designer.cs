@@ -12,8 +12,8 @@ using TouristsRepository;
 namespace TouristsRepository.Migrations
 {
     [DbContext(typeof(TouristsContext))]
-    [Migration("20251222200935_FixCircularDelete")]
-    partial class FixCircularDelete
+    [Migration("20251222204656_FixChatParticipantsTable")]
+    partial class FixChatParticipantsTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
