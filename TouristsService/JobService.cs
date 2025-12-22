@@ -82,63 +82,6 @@ public class JobService : IJobService
             _logger.LogInformation($"[Job] Cleaned up {successCount} unpaid bookings.");
     }
 
-    public async Task DeleteOldFilesAsync()
-    {
-        var thresholdDate = DateTime.UtcNow.AddDays(-7);
-
-        var oldFiles = await _context.Set<FileRecord>()
-            .IgnoreQueryFilters() 
-            .Where(f => f.IsDeleted && f.DeletedAt < thresholdDate)
-            .ToListAsync();
-
-        if (!oldFiles.Any()) return;
-        
-        var oldFileIds = oldFiles.Select(f => f.Id).ToList();
-        var relatedMedia = await _context.Set<TourMedia>()
-            .Where(tm => oldFileIds.Contains(tm.FileId))
-            .ToListAsync();
-
-        if (relatedMedia.Any())
-        {
-            _context.Set<TourMedia>().RemoveRange(relatedMedia);
-            await _context.SaveChangesAsync();
-        }
-
-        int count = 0;
-        foreach (var file in oldFiles)
-        {
-            try
-            {
-                if (!string.IsNullOrEmpty(file.FilePath))
-                {
-
-                    var relativePath = file.FilePath.TrimStart('/', '\\');
-                    var fullPath = Path.Combine(_env.WebRootPath, relativePath);
-
-                    if (System.IO.File.Exists(fullPath))
-                    {
-                        System.IO.File.Delete(fullPath);
-                        _logger.LogInformation($"[Job] Deleted physical file: {fullPath}");
-                    }
-                }
-                _context.Set<FileRecord>().Remove(file);
-                await _context.SaveChangesAsync();
-                ++count;
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogWarning($"[Job] Cannot delete file {file.Id} because it is still in use (FK Constraint). Details:" +
-                                   $" {ex.InnerException?.Message}");
-                _context.Entry(file).State = EntityState.Detached;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"[Job] Error processing file {file.Id}");
-                _context.ChangeTracker.Clear();
-            }
-        }
-        _logger.LogInformation($"[Job] Removed {count} old file records from DB.");
-    }
 
     public async Task AutoCompleteFinishedBookings()
     {
@@ -293,5 +236,85 @@ public class JobService : IJobService
             _logger.LogError(ex, "[Job] Failed to batch cancel expired payments.");
             _context.ChangeTracker.Clear();
         }
+    }
+    public async Task DeleteOldFilesAsync()
+    {
+        var thresholdDate = DateTime.UtcNow.AddDays(-7);
+
+        var oldFiles = await _context.Set<FileRecord>()
+            .IgnoreQueryFilters() 
+            .Where(f => f.IsDeleted && f.DeletedAt < thresholdDate)
+            .ToListAsync();
+
+        await ProcessFileDeletion(oldFiles);
+        
+        var ghostThreshold = DateTime.UtcNow.AddHours(-24);
+
+        // Find files that are OLD, NOT Deleted, and NOT linked to anything
+        var ghostFiles = await _context.Set<FileRecord>()
+            .Where(f => f.CreatedAt < ghostThreshold && !f.IsDeleted) 
+            .Where(f => !_context.Set<TourMedia>().Any(tm => tm.FileId == f.Id))
+            .Where(f => !_context.Set<Message>().Any(m => m.AttachmentFileId == f.Id)) // Not in Chat
+             .Where(f => !_context.TouristProfiles.Any(u => u.AvatarFileId == f.Id)) 
+            .Where(f => !_context.GuideProfiles.Any(g => g.AvatarFileId == f.Id)) 
+            .ToListAsync();
+
+        if (ghostFiles.Any())
+        {
+            _logger.LogInformation($"[Job] Found {ghostFiles.Count} abandoned ghost files.");
+            await ProcessFileDeletion(ghostFiles);
+        }
+        
+    }
+    
+    private async Task ProcessFileDeletion(List<FileRecord> filesToDelete)
+    {
+        if (!filesToDelete.Any()) return;
+        
+        var fileIds = filesToDelete.Select(f => f.Id).ToList();
+        var relatedMedia = await _context.Set<TourMedia>()
+            .Where(tm => fileIds.Contains(tm.FileId))
+            .ToListAsync();
+
+        if (relatedMedia.Any())
+        {
+            _context.Set<TourMedia>().RemoveRange(relatedMedia);
+            await _context.SaveChangesAsync();
+        }
+
+        int count = 0;
+        foreach (var file in filesToDelete)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(file.FilePath))
+                {
+                    var relativePath = file.FilePath.TrimStart('/', '\\');
+                    var fullPath = Path.Combine(_env.WebRootPath, relativePath);
+
+                    if (System.IO.File.Exists(fullPath))
+                    {
+                        System.IO.File.Delete(fullPath);
+                        _logger.LogInformation($"[Job] Deleted physical file: {fullPath}");
+                    }
+                }
+                _context.Set<FileRecord>().Remove(file);
+                await _context.SaveChangesAsync();
+                ++count;
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogWarning($"[Job] Skipped file {file.Id} - Still in use. Details: {ex.InnerException?.Message}");
+                _context.Entry(file).State = EntityState.Detached;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"[Job] Error deleting file {file.Id}");
+                _context.ChangeTracker.Clear();
+            }
+        }
+    
+        if (count > 0)
+            _logger.LogInformation($"[Job] Successfully scrubbed {count} files from database.");
     }
 }
