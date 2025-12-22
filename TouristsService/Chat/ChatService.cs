@@ -293,17 +293,18 @@ public class ChatService : IChatService
         
         if (chat != null) return chat;
 
-        var newChat = new Chat()
-        { 
-          Participants = new List<ChatParticipant>()
-          {
-            new ChatParticipant(){UserId = senderId},
-            new ChatParticipant(){UserId = receiverId}
-          }
-        };
-        _unitOfWork.ChatRepository.Add(newChat);
-        await _unitOfWork.CompleteAsync();
-        return newChat;
+        
+            var newChat = new Chat()
+            { 
+                Participants = new List<ChatParticipant>()
+                {
+                    new ChatParticipant(){UserId = senderId},
+                    new ChatParticipant(){UserId = receiverId}
+                }
+            };
+            _unitOfWork.ChatRepository.Add(newChat);
+            await _unitOfWork.CompleteAsync();
+            return newChat;
     }
 
    

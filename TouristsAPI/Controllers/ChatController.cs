@@ -20,7 +20,7 @@ public class ChatController : ControllerBase
     }
 
     [HttpPost("send")]
-    public async Task<IActionResult> Send([FromForm] SendMessageDto messageDto) // accepts text+file
+    public async Task<IActionResult> Send([FromBody] SendMessageDto messageDto)
     {
         try
         {

@@ -8,7 +8,7 @@ public class ChatParticipantConfiguration : IEntityTypeConfiguration<ChatPartici
 {
     public void Configure(EntityTypeBuilder<ChatParticipant> builder)
     {
-        builder.HasKey(cp => new { cp.ChatId, cp.UserId });
+        builder.HasIndex(cp => new { cp.ChatId, cp.UserId }).IsUnique();
 
         // Chat -> Participant
         // Rule:  If Chat room is deleted, participants are removed.
