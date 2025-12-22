@@ -18,6 +18,8 @@ public interface IJobService
     Task SendReviewRemindersAsync();
     
     Task CancelExpiredPaymentsAsync();
+
+    Task AutoCompleteFinishedBookings();
 }
 
 public class JobService : IJobService
@@ -224,4 +226,73 @@ public class JobService : IJobService
         }
 
     }
+
+  public async Task AutoCompleteFinishedBookings()
+{
+    var now = DateTime.UtcNow;
+
+    
+    var finishedBookingIds = await _context.Bookings
+        .Where(b => b.Status == BookingStatus.Confirmed &&
+                    b.TourSchedule.StartTime.AddMinutes(b.TourSchedule.Tour.DurationMinutes) < now)
+        .Select(b => b.Id)
+        .ToListAsync();
+    
+     if(!finishedBookingIds.Any()) return;
+
+     int successCount = 0;
+
+     foreach (var id in finishedBookingIds)
+     {
+         try
+         {
+             var booking = await _context.Bookings
+                 .Include(b => b.Tour) 
+                 .Include(b => b.Tourist).ThenInclude(t => t.User) 
+                 .FirstOrDefaultAsync(b => b.Id == id);
+            
+             if (booking == null || booking.Status != BookingStatus.Confirmed) 
+                 continue; 
+
+             booking.Status = BookingStatus.Completed;
+             await _context.SaveChangesAsync();
+             
+             var subject = $"How was your trip to {booking.Tour.Title}? ⭐";
+             var reviewLink = $"https://Tourist.com/bookings/{booking.Id}/write-review";
+
+             var body = $@"<div style='font-family: Arial, sans-serif; padding: 20px;'>
+                        <h2>Welcome Back, {booking.Tourist.FullName}!</h2>
+                        <p>We hope you enjoyed your tour to <strong>{booking.Tour.Title}</strong>.</p>
+                        <a href='{reviewLink}'>⭐⭐⭐⭐⭐ Rate Your Trip</a>
+                      </div>";
+             try
+             {
+                 if (booking.Tourist?.User?.Email != null)
+                 {
+                     await _emailService.SendEmailAsync(booking.Tourist.User.Email, subject, body);
+                 }
+             }
+             catch (Exception ex)
+             {
+                 _logger.LogError(ex, $"[Job] Booking {id} completed, but email failed.");
+             }
+             
+             successCount++;
+         }
+         catch (DbUpdateConcurrencyException)
+         {
+             _logger.LogWarning($"[Job] Concurrency conflict for Booking {id}. Skipping.");
+             _context.ChangeTracker.Clear();
+         }
+         catch (Exception ex)
+         {
+             _logger.LogError(ex, "[Job] Error Completing booking {Id}", id);
+             _context.ChangeTracker.Clear();
+         }
+     }
+     
+     if(successCount > 0)
+         _logger.LogInformation($"[Job] Marked {successCount} bookings as Completed.");
+}
+    
 }

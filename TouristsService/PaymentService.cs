@@ -132,7 +132,7 @@ public class PaymentService
       payment.TransactionId = session.PaymentIntentId;
       payment.Status = PaymentStatus.Succeeded;
       payment.PaymentDate = DateTime.UtcNow;
-      payment.Booking.Status = BookingStatus.Paid;
+      payment.Booking.Status = BookingStatus.Confirmed;
       
       _unitOfWork.Repository<Payment>().Update(payment);
       await _unitOfWork.CompleteAsync();

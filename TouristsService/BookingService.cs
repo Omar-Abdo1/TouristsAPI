@@ -139,7 +139,7 @@ public class BookingService : IBookingService
                 if (booking.TourSchedule.StartTime < DateTime.UtcNow.AddHours(24)) // business Logic 
                 throw new Exception("Cannot cancel within 24 hours of the tour.");
                 
-                if (booking.Status == BookingStatus.Paid || booking.Status == BookingStatus.Confirmed)
+                if (booking.Status == BookingStatus.Confirmed)
                 {
                     var hoursUntilTrip = (booking.TourSchedule.StartTime - DateTime.UtcNow).TotalHours;
 

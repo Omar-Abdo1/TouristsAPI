@@ -31,6 +31,10 @@ public static class AddingBackGroundJobs
                 "send-review-reminders",job=>job.
                     SendReviewRemindersAsync(),
                 Cron.Daily(10));
+            
+            recurringJobManager.AddOrUpdate<IJobService>(
+                "Mark-As-Complete-Booking",job=>job.AutoCompleteFinishedBookings(),
+                Cron.Hourly);
         }
 
         return app;
