@@ -55,19 +55,20 @@ public class JobService : IJobService
         {
             try
             {
-                var booking = await _context.Set<Booking>().FindAsync(id);
+                var booking = await _context.Bookings.FindAsync(id);
                 
                 if (booking == null || booking.Status != BookingStatus.Pending) 
                     continue; 
 
                 booking.Status = BookingStatus.Cancelled;
+                _context.Bookings.Update(booking);
                 
                 await _context.SaveChangesAsync();
                 successCount++;
             }
             catch (DbUpdateConcurrencyException)
             {
-                _logger.LogWarning($"[Job] Concurrency conflict for Booking {id}. Skipping.");
+                _logger.LogWarning($"[Job] Concurrency conflict for Booking {id}. User likely paid just now. Skipping.");
                 _context.ChangeTracker.Clear();
             }
             catch (Exception ex)
@@ -85,79 +86,147 @@ public class JobService : IJobService
     {
         var thresholdDate = DateTime.UtcNow.AddDays(-7);
 
-        
         var oldFiles = await _context.Set<FileRecord>()
-            .IgnoreQueryFilters()
+            .IgnoreQueryFilters() 
             .Where(f => f.IsDeleted && f.DeletedAt < thresholdDate)
             .ToListAsync();
 
-        if (!oldFiles.Any())
-        {
-            _logger.LogInformation("No Files found");
-            return; 
-        }
+        if (!oldFiles.Any()) return;
         
         var oldFileIds = oldFiles.Select(f => f.Id).ToList();
-        
         var relatedMedia = await _context.Set<TourMedia>()
-            .Where(tm => oldFileIds.Contains(tm.FileId)).ToListAsync();
+            .Where(tm => oldFileIds.Contains(tm.FileId))
+            .ToListAsync();
 
         if (relatedMedia.Any())
         {
             _context.Set<TourMedia>().RemoveRange(relatedMedia);
             await _context.SaveChangesAsync();
         }
-        
+
+        int count = 0;
         foreach (var file in oldFiles)
         {
             try
             {
-                // Convert relative path to absolute system path
-                
-                var relativePath = file.FilePath.TrimStart('/', '\\');
-                var fullPath = Path.Combine(_env.WebRootPath, relativePath);
-
-                if (System.IO.File.Exists(fullPath))
+                if (!string.IsNullOrEmpty(file.FilePath))
                 {
-                    System.IO.File.Delete(fullPath);
-                    _logger.LogInformation($"[Job] Deleted physical file: {fullPath}");
+
+                    var relativePath = file.FilePath.TrimStart('/', '\\');
+                    var fullPath = Path.Combine(_env.WebRootPath, relativePath);
+
+                    if (System.IO.File.Exists(fullPath))
+                    {
+                        System.IO.File.Delete(fullPath);
+                        _logger.LogInformation($"[Job] Deleted physical file: {fullPath}");
+                    }
                 }
+                _context.Set<FileRecord>().Remove(file);
+                await _context.SaveChangesAsync();
+                ++count;
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogWarning($"[Job] Cannot delete file {file.Id} because it is still in use (FK Constraint). Details:" +
+                                   $" {ex.InnerException?.Message}");
+                _context.Entry(file).State = EntityState.Detached;
             }
             catch (Exception ex)
             {
-               _logger.LogError(ex,$"[Job] Error deleting file {file.FilePath}: {ex.Message}");
+                _logger.LogError(ex, $"[Job] Error processing file {file.Id}");
+                _context.ChangeTracker.Clear();
             }
         }
+        _logger.LogInformation($"[Job] Removed {count} old file records from DB.");
+    }
 
-        _context.Set<FileRecord>().RemoveRange(oldFiles);
-        await _context.SaveChangesAsync();
+    public async Task AutoCompleteFinishedBookings()
+    {
+        var now = DateTime.UtcNow;
 
-        _logger.LogInformation($"[Job] Removed {oldFiles.Count} old file records from DB.");
+        var finishedBookingIds = await _context.Bookings
+            .Include(b=>b.Tour).Include(b=>b.TourSchedule)
+            .Where(b => b.Status == BookingStatus.Confirmed &&
+                        b.TourSchedule.StartTime.AddMinutes(b.Tour.DurationMinutes) < now)
+            .Select(b => b.Id)
+            .ToListAsync();
+        
+        if(!finishedBookingIds.Any()) return;
+
+        int successCount = 0;
+
+        foreach (var id in finishedBookingIds)
+        {
+            try
+            {
+                var booking = await _context.Bookings
+                    .Include(b => b.Tour) 
+                    .Include(b => b.Tourist).ThenInclude(t => t.User) 
+                    .FirstOrDefaultAsync(b => b.Id == id);
+                
+                if (booking == null || booking.Status != BookingStatus.Confirmed) 
+                    continue; 
+
+                booking.Status = BookingStatus.Completed;
+                await _context.SaveChangesAsync();
+                
+                var subject = $"How was your trip to {booking.Tour.Title}? ⭐";
+                var reviewLink = $"https://Tourist.com/bookings/{booking.Id}/write-review";
+
+                var body = $@"<div style='font-family: Arial, sans-serif; padding: 20px;'>
+                            <h2>Welcome Back, {booking.Tourist.FullName}!</h2>
+                            <p>We hope you enjoyed your tour to <strong>{booking.Tour.Title}</strong>.</p>
+                            <a href='{reviewLink}'>⭐⭐⭐⭐⭐ Rate Your Trip Now</a>
+                          </div>";
+                try
+                {
+                    if (booking.Tourist?.User?.Email != null)
+                    {
+                        await _emailService.SendEmailAsync(booking.Tourist.User.Email, subject, body);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"[Job] Booking {id} completed, but email failed.");
+                }
+                
+                successCount++;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                _logger.LogWarning($"[Job] Concurrency conflict for Booking {id}. Skipping.");
+                _context.ChangeTracker.Clear();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Job] Error Completing booking {Id}", id);
+                _context.ChangeTracker.Clear();
+            }
+        }
+        
+        if(successCount > 0)
+            _logger.LogInformation($"[Job] Marked {successCount} bookings as Completed.");
     }
 
     public async Task SendReviewRemindersAsync()
     {
-        // between 24H and 48H
         var yesterday = DateTime.UtcNow.AddDays(-1);
         var startWindow = yesterday.AddHours(-12); 
         var endWindow = yesterday.AddHours(12);
 
-        var bookingsToRemind = await _context.Set<Booking>()
+        var bookingsToRemind = await _context.Bookings
+            .AsNoTracking()
             .Include(b => b.Tour)
             .Include(b => b.TourSchedule)
             .Include(b => b.Tourist).ThenInclude(t => t.User)
             .Where(b =>
-                (b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.Completed) &&
+                (b.Status == BookingStatus.Completed) && 
                 b.TourSchedule.StartTime.AddMinutes(b.Tour.DurationMinutes) >= startWindow &&
                 b.TourSchedule.StartTime.AddMinutes(b.Tour.DurationMinutes) <= endWindow &&
                 !_context.Set<Review>().Any(r => r.BookingId == b.Id))
             .ToListAsync();
         
-        if (!bookingsToRemind.Any())
-        {
-            _logger.LogInformation("No bookings found");
-            return;
-        }
+        if (!bookingsToRemind.Any()) return;
 
         int sentCount = 0;
 
@@ -166,13 +235,14 @@ public class JobService : IJobService
             if (booking.Tourist?.User == null || string.IsNullOrEmpty(booking.Tourist.User.Email)) 
                 continue;
             
-            var subject = $"How was your trip to {booking.Tour.Title}? ⭐";
+            var subject = $"Reminder: Rate your trip to {booking.Tour.Title} ✍️"; // Changed Subject
             var reviewLink = $"https://Tourist.com/bookings/{booking.Id}/write-review";
 
             var body = $@"<div style='font-family: Arial, sans-serif; padding: 20px;'>
-                            <h2>Welcome Back, {booking.Tourist.FullName}!</h2>
-                            <p>We hope you enjoyed your tour to <strong>{booking.Tour.Title}</strong>.</p>
-                            <a href='{reviewLink}'>⭐⭐⭐⭐⭐ Rate Your Trip</a>
+                            <h2>Hi {booking.Tourist.FullName},</h2>
+                            <p>It's been a day since your tour to <strong>{booking.Tour.Title}</strong>.</p>
+                            <p>In case you forgot, we'd love to hear your thoughts!</p>
+                            <a href='{reviewLink}'>⭐⭐⭐⭐⭐ Write a Review</a>
                           </div>";
             try
             {
@@ -181,14 +251,13 @@ public class JobService : IJobService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"[Job] Failed to email booking {booking.Id}");
+                _logger.LogError(ex, $"[Job] Failed to email reminder for booking {booking.Id}");
             }
         }
 
         if (sentCount > 0)
             _logger.LogInformation($"[Job] Sent {sentCount} review reminders.");
-            
-        }
+    }
 
     public async Task CancelExpiredPaymentsAsync()
     {
@@ -224,75 +293,5 @@ public class JobService : IJobService
             _logger.LogError(ex, "[Job] Failed to batch cancel expired payments.");
             _context.ChangeTracker.Clear();
         }
-
     }
-
-  public async Task AutoCompleteFinishedBookings()
-{
-    var now = DateTime.UtcNow;
-
-    
-    var finishedBookingIds = await _context.Bookings
-        .Where(b => b.Status == BookingStatus.Confirmed &&
-                    b.TourSchedule.StartTime.AddMinutes(b.TourSchedule.Tour.DurationMinutes) < now)
-        .Select(b => b.Id)
-        .ToListAsync();
-    
-     if(!finishedBookingIds.Any()) return;
-
-     int successCount = 0;
-
-     foreach (var id in finishedBookingIds)
-     {
-         try
-         {
-             var booking = await _context.Bookings
-                 .Include(b => b.Tour) 
-                 .Include(b => b.Tourist).ThenInclude(t => t.User) 
-                 .FirstOrDefaultAsync(b => b.Id == id);
-            
-             if (booking == null || booking.Status != BookingStatus.Confirmed) 
-                 continue; 
-
-             booking.Status = BookingStatus.Completed;
-             await _context.SaveChangesAsync();
-             
-             var subject = $"How was your trip to {booking.Tour.Title}? ⭐";
-             var reviewLink = $"https://Tourist.com/bookings/{booking.Id}/write-review";
-
-             var body = $@"<div style='font-family: Arial, sans-serif; padding: 20px;'>
-                        <h2>Welcome Back, {booking.Tourist.FullName}!</h2>
-                        <p>We hope you enjoyed your tour to <strong>{booking.Tour.Title}</strong>.</p>
-                        <a href='{reviewLink}'>⭐⭐⭐⭐⭐ Rate Your Trip</a>
-                      </div>";
-             try
-             {
-                 if (booking.Tourist?.User?.Email != null)
-                 {
-                     await _emailService.SendEmailAsync(booking.Tourist.User.Email, subject, body);
-                 }
-             }
-             catch (Exception ex)
-             {
-                 _logger.LogError(ex, $"[Job] Booking {id} completed, but email failed.");
-             }
-             
-             successCount++;
-         }
-         catch (DbUpdateConcurrencyException)
-         {
-             _logger.LogWarning($"[Job] Concurrency conflict for Booking {id}. Skipping.");
-             _context.ChangeTracker.Clear();
-         }
-         catch (Exception ex)
-         {
-             _logger.LogError(ex, "[Job] Error Completing booking {Id}", id);
-             _context.ChangeTracker.Clear();
-         }
-     }
-     
-     if(successCount > 0)
-         _logger.LogInformation($"[Job] Marked {successCount} bookings as Completed.");
-}
-    
 }
