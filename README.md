@@ -130,8 +130,6 @@ The platform features real-time messaging with SignalR, secure Stripe payment in
 - **Authentication**: ASP.NET Core Identity + JWT Bearer
 - **Authorization**: Policy-based authorization
 - **Token Management**: Refresh token rotation
-- **Password Hashing**: PBKDF2 with salt
-- **Rate Limiting**: Token bucket algorithm
 
 ### Real-Time & Messaging
 - **Real-Time Protocol**: SignalR with WebSocket transport
@@ -144,12 +142,11 @@ The platform features real-time messaging with SignalR, secure Stripe payment in
 - **Security**: Webhook signature verification
 
 ### Storage & Media
-- **File Storage**: Azure Blob Storage / AWS S3 / Local FileSystem
+- **File Storage**: Azure Blob Storage / Local FileSystem
 - **Image Processing**: ImageSharp for optimization
-- **CDN**: Cloudflare / Azure CDN integration ready
 
 ### Email & Notifications
-- **Email Service**: SMTP / SendGrid / Mailgun
+- **Email Service**: SMTP 
 - **Templates**: Razor Email Templates
 - **Features**: Password reset, booking confirmations, review reminders
 
