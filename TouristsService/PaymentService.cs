@@ -1,4 +1,6 @@
+using System.Data;
 using Hangfire;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -19,6 +21,7 @@ public class PaymentService
    private readonly IBackgroundJobClient _jobClient;
    private readonly IEmailService _emailService;
    private readonly ILogger<PaymentService> _logger;
+   private const int MaxRetries = 5;
 
    public PaymentService(IUnitOfWork  unitOfWork,IConfiguration  configuration,IBackgroundJobClient jobClient,
       IEmailService  emailService,ILogger<PaymentService>  logger)
@@ -78,32 +81,41 @@ public class PaymentService
 
       var service = new SessionService();
       var session = await service.CreateAsync(options);
-      
-      var existingPayment = await _unitOfWork.Repository<Payment>()
-         .GetEntityByConditionAsync(p => p.BookingId == bookingId);
-      if (existingPayment != null)
-      {
-         existingPayment.TransactionId = session.Id; 
-         existingPayment.Status = PaymentStatus.Pending;
-         existingPayment.Amount = booking.PriceAtBooking;
-         existingPayment.Provider = "Stripe";
-         _unitOfWork.Repository<Payment>().Update(existingPayment);
-      }
-      else
-      {
-         var payment = new Payment
-         {
-            BookingId = booking.Id,
-            Amount = booking.PriceAtBooking,
-            Status = PaymentStatus.Pending,
-            Provider = "Stripe",
-            TransactionId = session.Id // save it to DB (its temp we will swap it with PaymentIntentId later) 
-         };
-         _unitOfWork.Repository<Payment>().Add(payment);
-      }
 
-      await _unitOfWork.CompleteAsync();
-      
+      try
+      {
+          
+         var existingPayment = await _unitOfWork.Repository<Payment>()
+            .GetEntityByConditionAsync(p => p.BookingId == bookingId);
+         if (existingPayment != null)
+         {
+            existingPayment.TransactionId = session.Id; 
+            existingPayment.Status = PaymentStatus.Pending;
+            existingPayment.Amount = booking.PriceAtBooking;
+            existingPayment.Provider = "Stripe";
+            _unitOfWork.Repository<Payment>().Update(existingPayment);
+         }
+         else
+         {
+            var payment = new Payment
+            {
+               BookingId = booking.Id,
+               Amount = booking.PriceAtBooking,
+               Status = PaymentStatus.Pending,
+               Provider = "Stripe",
+               TransactionId = session.Id // save it to DB (its temp we will swap it with PaymentIntentId later) 
+            };
+            _unitOfWork.Repository<Payment>().Add(payment);
+         }
+
+         await _unitOfWork.CompleteAsync();
+         
+      }
+      catch (DbUpdateConcurrencyException)
+      {
+         _logger.LogWarning($"Concurrency conflict creating session for booking {bookingId}. Ignoring.");
+         _unitOfWork.Context.ChangeTracker.Clear();
+      }
       return session;
    }
 
@@ -114,109 +126,150 @@ public class PaymentService
       
       int bookingId = int.Parse(bookingIdStr);
 
-      var payment = await _unitOfWork.Repository<Payment>().GetEntityByConditionAsync(
-         p => p.TransactionId == session.Id, false, p => p.Booking,
-         p=>p.Booking.Tourist.User);
-      
-      if (payment == null || payment.Status == PaymentStatus.Succeeded)
-      return;
-      
-      long expectedAmount = (long)(payment.Booking.PriceAtBooking * 100);
-      long receivedAmount = session.AmountTotal ?? 0;
-      if (expectedAmount != receivedAmount)
+      int maxRetries = MaxRetries;
+      int currentRetry = 0;
+      while (currentRetry < maxRetries)
       {
-         _logger.LogCritical("[SECURITY] Amount mismatch for booking {BookingId}", bookingId);
-         return;
-      }
+         try
+         {
+            var payment = await _unitOfWork.Repository<Payment>().GetEntityByConditionAsync(
+               p => p.TransactionId == session.Id, false, p => p.Booking,
+               p=>p.Booking.Tourist.User);
+      
+            if (payment == null || payment.Status == PaymentStatus.Succeeded)
+               return;
+      
+            long expectedAmount = (long)(payment.Booking.PriceAtBooking * 100);
+            long receivedAmount = session.AmountTotal ?? 0;
+            if (expectedAmount != receivedAmount)
+            {
+               _logger.LogCritical("[SECURITY] Amount mismatch for booking {BookingId}", bookingId);
+               return;
+            }
 
-      payment.TransactionId = session.PaymentIntentId;
-      payment.Status = PaymentStatus.Succeeded;
-      payment.PaymentDate = DateTime.UtcNow;
-      payment.Booking.Status = BookingStatus.Confirmed;
+            payment.TransactionId = session.PaymentIntentId;
+            payment.Status = PaymentStatus.Succeeded;
+            payment.PaymentDate = DateTime.UtcNow;
+            payment.Booking.Status = BookingStatus.Confirmed;
       
-      _unitOfWork.Repository<Payment>().Update(payment);
-      await _unitOfWork.CompleteAsync();
+            _unitOfWork.Repository<Payment>().Update(payment);
+            await _unitOfWork.CompleteAsync();
       
-      _jobClient.Enqueue(() =>
-         _emailService.SendEmailAsync(
-            payment.Booking.Tourist.User.Email,
-            "Ticket Confirmed",
-            "Your booking has been successfully confirmed."
-         )
-      );
+            _jobClient.Enqueue(() =>
+               _emailService.SendEmailAsync(
+                  payment.Booking.Tourist.User.Email,
+                  "Ticket Confirmed",
+                  "Your booking has been successfully confirmed."
+               )
+            );
+             
+         }
+         catch (DbUpdateConcurrencyException)
+         {
+           ++currentRetry;
+           _unitOfWork.Context.ChangeTracker.Clear();
+           await Task.Delay(50 * currentRetry);
+         }
+         catch (Exception ex)
+         {
+            _logger.LogError(ex, "Fatal error processing success webhook");
+            break; 
+         }
+      }
+      
    }
+
 
    public async Task HandleCheckoutExpiredAsync(Stripe.Checkout.Session session)
    {
-      if(!session.Metadata.TryGetValue("booking_id",out var bookingIdStr))
-         return;
-      int bookingId = int.Parse(bookingIdStr);
+      try
+      {
+         if(!session.Metadata.TryGetValue("booking_id",out var bookingIdStr))
+            return;
+         int bookingId = int.Parse(bookingIdStr);
       
-      var payment = await _unitOfWork.Repository<Payment>().GetEntityByConditionAsync(
-         p => p.TransactionId == session.Id);
+         var payment = await _unitOfWork.Repository<Payment>().GetEntityByConditionAsync(
+            p => p.TransactionId == session.Id);
       
-      if (payment == null || payment.Status != PaymentStatus.Pending)
-         return;
+         if (payment == null || payment.Status != PaymentStatus.Pending)
+            return;
 
-      payment.TransactionId = session.PaymentIntentId;
-      payment.Status = PaymentStatus.Cancelled;
-      payment.FailureMessage = "Checkout session expired or canceled by user";
+         payment.TransactionId = session.PaymentIntentId;
+         payment.Status = PaymentStatus.Cancelled;
+         payment.FailureMessage = "Checkout session expired or canceled by user";
 
-      _unitOfWork.Repository<Payment>().Update(payment);
-      await _unitOfWork.CompleteAsync();
+         _unitOfWork.Repository<Payment>().Update(payment);
+         await _unitOfWork.CompleteAsync();
 
-      _logger.LogWarning("[Webhook] Checkout expired for booking {BookingId}", bookingId);
+      }
+      catch (DbUpdateConcurrencyException)
+      {
+         _logger.LogInformation("Concurrency hit on Expire Webhook. Assuming payment status changed. Skipping.");
+         _unitOfWork.Context.ChangeTracker.Clear();
+      }
    }
 
    public async Task HandlePaymentFailedAsync(PaymentIntent intent)
    {
-      if (!intent.Metadata.TryGetValue("booking_id", out var bookingIdStr))
-         return;
+      try
+      {
+         if (!intent.Metadata.TryGetValue("booking_id", out var bookingIdStr))
+            return;
 
-      int bookingId = int.Parse(bookingIdStr);
+         int bookingId = int.Parse(bookingIdStr);
       
-      var payment = await _unitOfWork.Repository<Payment>().GetEntityByConditionAsync(
-         p => p.BookingId ==bookingId && p.Status == PaymentStatus.Pending);
+         var payment = await _unitOfWork.Repository<Payment>().GetEntityByConditionAsync(
+            p => p.BookingId ==bookingId && p.Status == PaymentStatus.Pending);
       
-      if (payment == null || payment.Status != PaymentStatus.Pending)
-         return;
+         if (payment == null || payment.Status != PaymentStatus.Pending)
+            return;
       
-      payment.TransactionId = intent.Id;
-      payment.Status = PaymentStatus.Failed;
-      payment.FailureMessage = intent.LastPaymentError?.Message;
+         payment.TransactionId = intent.Id;
+         payment.Status = PaymentStatus.Failed;
+         payment.FailureMessage = intent.LastPaymentError?.Message;
       
-      _unitOfWork.Repository<Payment>().Update(payment);
-      await _unitOfWork.CompleteAsync();
+         _unitOfWork.Repository<Payment>().Update(payment);
+         await _unitOfWork.CompleteAsync();
+      }
+      catch (DbUpdateConcurrencyException)
+      {
+         _logger.LogInformation("Concurrency hit on Payment Failed Webhook. Skipping.");
+         _unitOfWork.Context.ChangeTracker.Clear();
 
-      _logger.LogWarning("[Webhook] Payment failed for PaymentIntent {IntentId}", intent.Id);
+      }
    }
 
    public async Task HandleChargeRefundedAsync(string paymentIntentId)
    {
-      var payment = await _unitOfWork.Repository<Payment>()
-         .GetEntityByConditionAsync(p => p.TransactionId == paymentIntentId,false,
-            p=>p.Booking);
-      
-      if (payment == null) 
-         return;
-      
-      if (payment.Status == PaymentStatus.Refunded) 
+      try
       {
-         _logger.LogInformation("Payment already marked as refunded. Skipping.");
-         return; 
-      }
-      payment.Status = PaymentStatus.Refunded;
-      payment.FailureMessage = "Refunded via External Webhook";
-   
-      if (payment.Booking != null) 
-         payment.Booking.Status = BookingStatus.Cancelled;
-
-      _unitOfWork.Repository<Payment>().Update(payment);
-      await _unitOfWork.CompleteAsync();
-
-      _logger.LogInformation($"[Webhook] Synced refund status for {paymentIntentId}");
+         var payment = await _unitOfWork.Repository<Payment>()
+            .GetEntityByConditionAsync(p => p.TransactionId == paymentIntentId,false,
+               p=>p.Booking);
       
-     
+         if (payment == null) 
+            return;
+      
+         if (payment.Status == PaymentStatus.Refunded) 
+         {
+            _logger.LogInformation("Payment already marked as refunded. Skipping.");
+            return; 
+         }
+         payment.Status = PaymentStatus.Refunded;
+         payment.FailureMessage = "Refunded via External Webhook";
+   
+         if (payment.Booking != null) 
+            payment.Booking.Status = BookingStatus.Cancelled;
+
+         _unitOfWork.Repository<Payment>().Update(payment);
+         await _unitOfWork.CompleteAsync();
+      }
+      catch (DbUpdateConcurrencyException)
+      {
+         _logger.LogInformation("Concurrency hit on Refund Webhook. Skipping.");
+         _unitOfWork.Context.ChangeTracker.Clear();
+      }
+      
    }
    public async Task RefundPaymentAsync(int bookingId)
    {
@@ -236,19 +289,44 @@ public class PaymentService
          };
          var refundService = new RefundService();
          await refundService.CreateAsync(refundOptions); 
-
-         payment.Status = PaymentStatus.Refunded;
-         payment.FailureMessage = "Refunded by Admin API";
-         if (payment.Booking != null) payment.Booking.Status = BookingStatus.Cancelled;
-
-         _unitOfWork.Repository<Payment>().Update(payment);
-         await _unitOfWork.CompleteAsync();
-
       }
       catch (StripeException ex)
       {
-         throw new Exception(ex.Message);
+         throw new Exception($"Stripe Refund Failed: {ex.Message}");
       }
+      
+      int maxRetries = MaxRetries;
+      int currentRetry = 0;
+      while (currentRetry<maxRetries)
+      {
+         try
+         {
+            var freshPayment = await _unitOfWork.Repository<Payment>()
+               .GetEntityByConditionAsync(p => p.BookingId == bookingId, false, 
+                  p => p.Booking);
+
+            if (freshPayment == null) break;
+            if(freshPayment.Status==PaymentStatus.Refunded)
+               break;
+            
+            freshPayment.Status = PaymentStatus.Refunded;
+            freshPayment.FailureMessage = "Refunded";
+            if (freshPayment.Booking != null)
+               freshPayment.Booking.Status = BookingStatus.Cancelled;
+
+            _unitOfWork.Repository<Payment>().Update(freshPayment);
+            await _unitOfWork.CompleteAsync();
+            break;
+         }
+         catch (DbUpdateConcurrencyException)
+         {
+            currentRetry++;
+            _unitOfWork.Context.ChangeTracker.Clear();
+            await Task.Delay(50 * currentRetry);
+         }
+         
+      }
+      
    }
 
 }
