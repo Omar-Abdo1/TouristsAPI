@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using System.Data;
 using TouristsCore.Enums.Payment;
 
 namespace TouristsCore.Entities;
@@ -17,4 +19,8 @@ public class Payment : BaseEntity
     // Debugging
     public DateTime? PaymentDate { get; set; } // Null until success
     public string? FailureMessage { get; set; } // "Card declined", etc.
+
+    [Timestamp]
+    public byte[] RowVersion { get; set; } // for concurrency when Paying 
+     
 }

@@ -27,4 +27,7 @@ public class Booking : BaseEntity
     public DateTime BookingDate { get; set; } = DateTime.UtcNow;
     
     public Payment Payment { get; set; }
+    
+    [Timestamp]
+    public byte[] RowVersion { get; set; } // for concurrency when Canceling or Buying
 }
