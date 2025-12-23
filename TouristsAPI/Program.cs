@@ -45,6 +45,7 @@ public class Program
                 options.AllowAnyHeader();
                 options.AllowAnyMethod();
                 options.WithOrigins(builder.Configuration["FrontBaseUrl"]); // URL for The FrontEnd
+                options.AllowCredentials(); // for SignalR
             });
         });
         
