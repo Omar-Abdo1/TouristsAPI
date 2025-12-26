@@ -21,6 +21,7 @@ A comprehensive, production-ready REST API platform connecting tourists with loc
 - [Real-Time Communication](#-real-time-communication-signalr)
 - [Background Jobs](#️-background-jobs)
 - [Technical Challenges Solved](#-technical-challenges-solved)
+- [Database Schema](#schema)
 - [Getting Started](#-getting-started)
 - [Contributing](#-contributing)
 
@@ -448,7 +449,20 @@ During development, we encountered and solved several complex engineering challe
 
 **Impact**: Reduced storage costs by 40% in first month.
 
----
+
+## <a id="schema"></a>🗄️ Database Schema (ER Diagrams)
+
+Here is a high-level overview of the database modules.
+
+### 1. Chat & Communication Module
+<img src="./images/master - TouristsDB - dbo - Messages.png" alt="Chat Schema" width="700"/>
+
+### 2. Tours & Booking Module
+<img src="./images/master - TouristsDB - dbo - Tours.png" alt="Tours Schema" width="700"/>
+
+### 3. User & Profiles Module
+<img src="./images/master - TouristsDB - dbo - Users.png" alt="Profiles Schema" width="700"/>
+
 
 ## 🚀 Getting Started
 
